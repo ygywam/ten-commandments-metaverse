@@ -1,4 +1,7 @@
 import { sound } from './engine/soundEngine.js';
+import { Camera } from './engine/camera.js';
+import { World } from './engine/world.js';
+import { InputController } from './controls/inputController.js';
 
 // DOM 요소 참조
 const soundToggleBtn = document.getElementById('btn-sound-toggle');
@@ -9,12 +12,29 @@ const startExploreBtn = document.getElementById('btn-start-exploration');
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 
-// 테스트 버튼들
-const btnTestBgm = document.getElementById('btn-test-bgm');
-const btnTestCorrect = document.getElementById('btn-test-correct');
-const btnTestItem = document.getElementById('btn-test-item');
-const btnTestStone = document.getElementById('btn-test-stone');
-const btnTestVictory = document.getElementById('btn-test-victory');
+// 게임 시스템 인스턴스
+const world = new World();
+const camera = new Camera(window.innerWidth, window.innerHeight, world.width, world.height);
+const input = new InputController();
+
+// 로컬 플레이어 아바타 상태
+const player = {
+  x: 2110,      // 모세 앞마당에서 시작
+  y: 1100,
+  speed: 4.8,
+  nickname: '믿음이',
+  isMoving: false,
+  walkCycle: 0,
+  facing: 'down',
+  style: {
+    skinColor: '#fed7aa',
+    hairColor: '#451a03',
+    shirtColor: '#ea580c',
+    pantsColor: '#1d4ed8',
+    shoesColor: '#374151',
+    accessory: 'hat' // 모자 착용
+  }
+};
 
 // 가로 모드 감지 (모바일 환경)
 function checkOrientation() {
@@ -26,93 +46,103 @@ function checkOrientation() {
   }
 }
 
-window.addEventListener('resize', () => {
-  resizeCanvas();
-  checkOrientation();
-});
-window.addEventListener('orientationchange', checkOrientation);
-
 // 캔버스 크기 맞춤
 function resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
   canvas.width = window.innerWidth * dpr;
   canvas.height = window.innerHeight * dpr;
   ctx.scale(dpr, dpr);
-  drawPreview();
+  camera.resize(window.innerWidth, window.innerHeight);
 }
 
-// 시내산 광야 초기 배경 프리뷰 렌더링
-function drawPreview() {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  checkOrientation();
+});
+window.addEventListener('orientationchange', checkOrientation);
 
-  // 광야 모래 바닥
-  ctx.fillStyle = '#f6edd9';
-  ctx.fillRect(0, 0, w, h);
-
-  // 모래 질감 도트 패턴
-  ctx.fillStyle = '#eddcb9';
-  for (let i = 0; i < 40; i++) {
-    const x = (i * 137) % w;
-    const y = (i * 89) % h;
-    ctx.fillRect(x, y, 6, 6);
-  }
-
-  // 상단 시내산 실루엣
-  ctx.fillStyle = '#d3b895';
-  ctx.beginPath();
-  ctx.moveTo(w * 0.1, h * 0.5);
-  ctx.lineTo(w * 0.35, h * 0.15);
-  ctx.lineTo(w * 0.6, h * 0.55);
-  ctx.lineTo(w * 0.85, h * 0.2);
-  ctx.lineTo(w, h * 0.5);
-  ctx.lineTo(w, h);
-  ctx.lineTo(0, h);
-  ctx.closePath();
-  ctx.fill();
-
-  // 중앙 모세 NPC 플레이스홀더
-  ctx.fillStyle = '#b45309';
-  ctx.beginPath();
-  ctx.arc(w * 0.5, h * 0.55, 20, 0, Math.PI * 2);
-  ctx.fill();
-
-  // 이름표
-  ctx.fillStyle = '#3d312a';
-  ctx.font = 'bold 14px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('모세 (십계명 돌판)', w * 0.5, h * 0.55 - 28);
-}
-
-// 오디오 컨트롤러 이벤트 리스너
+// 오디오 토글
 soundToggleBtn.addEventListener('click', () => {
   const isMuted = sound.toggleMute();
   soundIcon.textContent = isMuted ? '🔇' : '🔊';
 });
 
-// 테스트 버튼 리스너
-btnTestBgm.addEventListener('click', () => {
-  if (sound.isPlayingBgm) {
-    sound.stopBgm();
-    btnTestBgm.textContent = '🎵 BGM 재생';
-  } else {
-    sound.startBgm();
-    btnTestBgm.textContent = '⏸️ BGM 정지';
-  }
-});
-
-btnTestCorrect.addEventListener('click', () => sound.playCorrect());
-btnTestItem.addEventListener('click', () => sound.playItemGet());
-btnTestStone.addEventListener('click', () => sound.playStonePlace());
-btnTestVictory.addEventListener('click', () => sound.playVictory());
-
+// 시작 모달 닫기 및 게임 시작
 startExploreBtn.addEventListener('click', () => {
   sound.playSelect();
   sound.startBgm();
-  btnTestBgm.textContent = '⏸️ BGM 정지';
   welcomeModal.style.display = 'none';
 });
 
-// 초기 실행
+// 게임 루프
+function gameLoop() {
+  update();
+  render();
+  requestAnimationFrame(gameLoop);
+}
+
+function update() {
+  const { dx, dy, action } = input.getMovement();
+
+  if (dx !== 0 || dy !== 0) {
+    player.x += dx * player.speed;
+    player.y += dy * player.speed;
+    player.isMoving = true;
+    player.walkCycle += 0.25;
+
+    // 맵 경계 클램핑
+    player.x = Math.max(60, Math.min(world.width - 60, player.x));
+    player.y = Math.max(120, Math.min(world.height - 80, player.y));
+  } else {
+    player.isMoving = false;
+    player.walkCycle = 0;
+  }
+
+  // 카메라가 플레이어를 추적
+  camera.update(player.x, player.y);
+
+  // 상호작용 액션 감지
+  if (action) {
+    checkInteraction();
+  }
+}
+
+function checkInteraction() {
+  // 모세와의 거리 확인
+  const distMoses = Math.hypot(player.x - world.moses.x, player.y - world.moses.y);
+  if (distMoses < 75) {
+    sound.playStonePlace();
+    return;
+  }
+
+  // 10개 계명 장소와의 거리 확인
+  for (const spot of world.commandmentSpots) {
+    const dist = Math.hypot(player.x - spot.x, player.y - spot.y);
+    if (dist < 65) {
+      sound.playItemGet();
+      break;
+    }
+  }
+}
+
+function render() {
+  // 화면 지우기
+  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+  // 카메라 월드 좌표 변환 적용
+  camera.applyTransform(ctx);
+
+  // 1. 제공된 시내산 광야 맵 및 랜드마크 렌더링
+  world.renderBackground(ctx);
+
+  // 2. 플레이어 아바타 렌더링
+  world.renderAvatar(ctx, player);
+
+  // 카메라 변환 복원
+  camera.restoreTransform(ctx);
+}
+
+// 초기화
 checkOrientation();
 resizeCanvas();
+requestAnimationFrame(gameLoop);

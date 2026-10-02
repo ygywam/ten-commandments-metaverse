@@ -33,6 +33,22 @@
     <!-- 메인 캔버스 뷰포트 (게임 화면) -->
     <div id="game-container">
       <canvas id="game-canvas"></canvas>
+
+      <!-- 모바일 가상 조작 컨트롤러 UI (터치 환경) -->
+      <div id="mobile-controls" class="mobile-controls">
+        <div id="joystick-zone" class="joystick-zone">
+          <div id="joystick-base" class="joystick-base">
+            <div id="joystick-stick" class="joystick-stick"></div>
+          </div>
+        </div>
+
+        <div class="action-zone">
+          <button id="btn-mobile-action" class="mobile-action-btn">
+            <span class="action-icon">📜</span>
+            <span class="action-text">상호작용</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- 1단계 검증용 사운드 테스트 UI (초기 오디오 활성화 안내) -->
