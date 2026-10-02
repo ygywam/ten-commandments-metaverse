@@ -98,6 +98,43 @@ if (viewToggleBtn) {
   });
 }
 
+// 마우스 휠 줌 조절 (화면 자유 확대/축소)
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  camera.handleWheel(e.deltaY);
+}, { passive: false });
+
+// 키보드 확대(+) / 축소(-) 지원
+window.addEventListener('keydown', (e) => {
+  if (e.key === '+' || e.key === '=') {
+    camera.zoomIn();
+  } else if (e.key === '-' || e.key === '_') {
+    camera.zoomOut();
+  }
+});
+
+// 캔버스 클릭 이벤트: 캐릭터 클릭 시 관찰 포커스, 빈 배경 클릭 시 고정 전체 뷰
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const screenX = e.clientX - rect.left;
+  const screenY = e.clientY - rect.top;
+  const worldPos = camera.screenToWorld(screenX, screenY);
+
+  // 내 아바타(또는 접속자) 근처 클릭 검사 (반경 45px)
+  const dist = Math.hypot(worldPos.x - player.x, worldPos.y - player.y);
+  if (dist < 50) {
+    camera.setFollowTarget(player);
+    viewIcon.textContent = '🔍';
+    viewText.textContent = '전체 뷰';
+    sound.playSelect();
+  } else {
+    // 빈 배경 클릭 시 배경 고정 전체 뷰로 전환
+    camera.clearFollowTarget();
+    viewIcon.textContent = '👤';
+    viewText.textContent = '캐릭터 뷰';
+  }
+});
+
 // 게임 루프
 function gameLoop() {
   update();

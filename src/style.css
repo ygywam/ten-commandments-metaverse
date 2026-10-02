@@ -332,69 +332,81 @@ html, body {
   font-weight: 600;
 }
 
-.preset-cards-grid {
+.preset-badges-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 8px;
 }
 
-@media (min-width: 540px) {
-  .preset-cards-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.avatar-preset-card {
+.preset-badge-btn {
   background: #fdfaf3;
-  border: 2px solid var(--border-color);
-  border-radius: 16px;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.avatar-preset-card:hover {
-  background: #fef3c7;
-  border-color: var(--accent-gold);
-  transform: translateY(-2px);
-}
-
-.avatar-preset-card.active {
-  background: #fffbeb;
-  border-color: #d97706;
-  border-width: 3px;
-  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.25);
-}
-
-.avatar-preset-card canvas {
-  border-radius: 10px;
-  background: #fffdf7;
-  border: 1px solid var(--border-color);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-}
-
-.preset-card-info {
+  border: 1.5px solid var(--border-color);
+  border-radius: 12px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  align-items: flex-start;
+  gap: 2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
 }
 
-.preset-name {
+.preset-badge-btn strong {
   font-size: 13px;
-  font-weight: 700;
   color: var(--text-main);
 }
 
-.preset-gender {
+.preset-badge-btn span {
   font-size: 11px;
   color: var(--text-muted);
-  background: rgba(0,0,0,0.05);
-  padding: 2px 6px;
-  border-radius: 6px;
-  width: fit-content;
+}
+
+.preset-badge-btn:hover {
+  background: #fef3c7;
+  border-color: var(--accent-gold);
+}
+
+.preset-badge-btn.active {
+  background: #fffbeb;
+  border-color: #d97706;
+  border-width: 2.5px;
+  box-shadow: 0 3px 10px rgba(217, 119, 6, 0.25);
+}
+
+.preset-badge-btn.active strong {
+  color: #b45309;
+}
+
+.custom-opt-btn {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.custom-opt-btn:hover {
+  background: #fef3c7;
+  border-color: var(--accent-gold);
+}
+
+.custom-opt-btn.active {
+  background: #f59e0b;
+  color: #ffffff;
+  border-color: #d97706;
+  font-weight: 700;
+}
+
+.custom-opt-btn.active .color-dot {
+  border-color: #ffffff;
 }
 
 .customizer-footer {

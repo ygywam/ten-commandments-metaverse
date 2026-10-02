@@ -1,4 +1,5 @@
-// 2D 시내산 광야 메타버스 월드 매니저 (고화질 아바타 스프라이트 렌더러)
+// 2D 시내산 광야 메타버스 월드 매니저
+import { avatarRenderer } from './avatarRenderer.js';
 
 export class World {
   constructor() {
@@ -12,15 +13,7 @@ export class World {
       this.isMapLoaded = true;
     };
 
-    // 아바타 시트 로드
-    this.avatarSheet = new Image();
-    this.isAvatarSheetLoaded = false;
-    this.avatarSheet.src = './src/assets/avatars_sheet.jpg';
-    this.avatarSheet.onload = () => {
-      this.isAvatarSheetLoaded = true;
-    };
-
-    // 모세 NPC 위치
+    // 모세 NPC 위치 (성막 앞 제단)
     this.moses = {
       x: 2110,
       y: 920,
@@ -134,7 +127,6 @@ export class World {
     ctx.arc(m.x, m.y - 14 + mosesFloat, 12, 0, Math.PI);
     ctx.fill();
 
-    // 두 돌판
     ctx.fillStyle = '#78716c';
     ctx.fillRect(m.x - 18, m.y - 28 + mosesFloat, 12, 18);
     ctx.fillRect(m.x + 6, m.y - 28 + mosesFloat, 12, 18);
@@ -148,60 +140,8 @@ export class World {
     ctx.fillText(`👑 ${m.name}`, m.x, m.y - 54 + mosesFloat);
   }
 
-  // 고화질 레퍼런스 일러스트 기반 아바타 렌더링
+  // 실시간 보행 애니메이션 아바타 렌더링
   renderAvatar(ctx, player) {
-    const { x, y, nickname, isMoving, walkCycle, preset } = player;
-
-    ctx.save();
-    ctx.translate(x, y);
-
-    // 그림자
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-    ctx.beginPath();
-    ctx.ellipse(0, 8, 22, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    const bob = isMoving ? Math.sin(walkCycle) * 3 : 0;
-    const bounceWobble = isMoving ? Math.sin(walkCycle) * 0.05 : 0;
-
-    // 일러스트 스프라이트 렌더링
-    if (this.isAvatarSheetLoaded && preset && preset.crop) {
-      const c = preset.crop;
-      const targetW = 54;
-      const targetH = 75;
-
-      ctx.save();
-      ctx.translate(0, -targetH + 10 + bob);
-      ctx.rotate(bounceWobble);
-
-      ctx.drawImage(
-        this.avatarSheet,
-        c.x, c.y, c.w, c.h,
-        -targetW / 2, 0, targetW, targetH
-      );
-      ctx.restore();
-    } else {
-      ctx.fillStyle = '#ea580c';
-      ctx.fillRect(-12, -40 + bob, 24, 34);
-    }
-
-    // 머리 위 닉네임 명찰
-    ctx.font = 'bold 13px sans-serif';
-    ctx.textAlign = 'center';
-    const nick = nickname || '탐험가';
-    const textWidth = ctx.measureText(nick).width;
-
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-    ctx.strokeStyle = '#b45309';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.roundRect(-textWidth / 2 - 8, -84 + bob, textWidth + 16, 22, 11);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#1c1917';
-    ctx.fillText(nick, 0, -68 + bob);
-
-    ctx.restore();
+    avatarRenderer.draw(ctx, player, 1.35); // 맵 위에서 보기 좋은 1.35배 비율
   }
 }
