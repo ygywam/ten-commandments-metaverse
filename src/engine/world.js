@@ -1,5 +1,4 @@
 // 2D 시내산 광야 메타버스 월드 매니저
-import { avatarRenderer } from './avatarRenderer.js';
 
 export class World {
   constructor() {
@@ -11,6 +10,14 @@ export class World {
     this.mapImage.src = './src/assets/map_sinai.jpg';
     this.mapImage.onload = () => {
       this.isMapLoaded = true;
+    };
+
+    // 고화질 아바타 시트 로드
+    this.avatarSheet = new Image();
+    this.isAvatarSheetLoaded = false;
+    this.avatarSheet.src = './src/assets/avatars_sheet.jpg';
+    this.avatarSheet.onload = () => {
+      this.isAvatarSheetLoaded = true;
     };
 
     // 모세 NPC 위치 (성막 앞 제단)
@@ -140,8 +147,67 @@ export class World {
     ctx.fillText(`👑 ${m.name}`, m.x, m.y - 54 + mosesFloat);
   }
 
-  // 실시간 보행 애니메이션 아바타 렌더링
+  // 고화질 캐릭터 일러스트 기반 맵 아바타 렌더러
   renderAvatar(ctx, player) {
-    avatarRenderer.draw(ctx, player, 1.35); // 맵 위에서 보기 좋은 1.35배 비율
+    const { x, y, nickname, isMoving, walkCycle, preset } = player;
+
+    ctx.save();
+    ctx.translate(x, y);
+
+    // 그림자
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    ctx.beginPath();
+    ctx.ellipse(0, 6, 22, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const bob = isMoving ? Math.abs(Math.sin(walkCycle * 2)) * 4.5 : Math.sin(Date.now() * 0.003) * 1.5;
+    const tilt = isMoving ? Math.sin(walkCycle) * 0.05 : 0;
+
+    if (this.isAvatarSheetLoaded && preset && preset.crop) {
+      const c = preset.crop;
+      const targetW = 60;
+      const targetH = 84;
+
+      ctx.save();
+      ctx.translate(0, -targetH + 12 - bob);
+      ctx.rotate(tilt);
+
+      // 캐릭터 둥근 카드 클리핑 마스크 (모래 배경과 조화)
+      ctx.beginPath();
+      ctx.roundRect(-targetW / 2, 0, targetW, targetH, [18, 18, 10, 10]);
+      ctx.clip();
+
+      ctx.drawImage(
+        this.avatarSheet,
+        c.x, c.y, c.w, c.h,
+        -targetW / 2, 0, targetW, targetH
+      );
+
+      // 테두리 글로우 라인
+      ctx.strokeStyle = preset.color || '#f59e0b';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // 머리 위 닉네임 명찰
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    const nick = nickname || '탐험가';
+    const textWidth = ctx.measureText(nick).width;
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.strokeStyle = preset?.color || '#b45309';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-textWidth / 2 - 8, -82 - bob, textWidth + 16, 22, 11);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#1c1917';
+    ctx.fillText(nick, 0, -66 - bob);
+
+    ctx.restore();
   }
 }
