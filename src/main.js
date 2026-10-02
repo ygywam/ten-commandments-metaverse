@@ -39,14 +39,13 @@ const player = {
   isMoving: false,
   walkCycle: 0,
   facing: 'down',
-  style: null,
-  preset: null
+  custom: null
 };
 
-// 아바타 커스터마이저 초기화 (8종 고화질 프리셋 연동)
-new AvatarCustomizer((nickname, preset) => {
+// 아바타 커스터마이저 초기화 (4프레임 보행 스프라이트 & 파츠 연동)
+new AvatarCustomizer((nickname, custom) => {
   player.nickname = nickname;
-  player.preset = preset;
+  player.custom = custom;
   avatarModal.style.display = 'none';
 
   sound.playSelect();
@@ -198,8 +197,8 @@ function render() {
   // 1. 제공된 시내산 광야 맵 및 랜드마크 렌더링
   world.renderBackground(ctx);
 
-  // 2. 플레이어 아바타 렌더링 (선택된 고화질 성경 캐릭터)
-  if (player.preset) {
+  // 2. 플레이어 아바타 렌더링 (4프레임 실제 보행 스프라이트)
+  if (player.custom) {
     world.renderAvatar(ctx, player);
   }
 
