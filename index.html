@@ -107,26 +107,26 @@
       </div>
     </div>
 
-    <!-- 교사용 방 개설 & 학생 모바일 접속 QR코드 모달 -->
-    <div id="room-modal" class="modal-overlay hidden">
-      <div class="room-card">
-        <div class="room-header">
-          <h2>📱 학생 모바일 접속 QR코드</h2>
-          <button id="btn-close-room" class="close-btn" aria-label="닫기">✕</button>
+    <!-- 교사용 우측 상단 플로팅 QR코드 위젯 (언제든 최소화/확장 가능) -->
+    <div id="floating-qr-widget" class="floating-qr-box">
+      <div class="floating-qr-header">
+        <span class="qr-badge">📱 학생 입장 QR</span>
+        <div class="floating-qr-actions">
+          <button id="btn-toggle-qr-size" class="qr-action-btn" title="접기/펼치기">➖</button>
+          <button id="btn-close-qr-widget" class="qr-action-btn" title="감추기">✕</button>
         </div>
-        <div class="room-body">
-          <p class="room-desc">스마트폰 카메라로 아래 QR코드를 비추면 즉시 입장할 수 있습니다!</p>
-          <div class="qr-container">
-            <div id="qrcode-box"></div>
-          </div>
-          <div class="room-info-box">
-            <div class="room-code-tag">방 코드: <strong id="room-code-display">생성 중...</strong></div>
-            <div class="room-players-tag">현재 접속자: <span id="player-count-display">1</span>명</div>
-          </div>
-          <div class="room-url-box">
-            <input type="text" id="input-join-url" readonly value="">
-            <button id="btn-copy-url" class="secondary-btn">링크 복사</button>
-          </div>
+      </div>
+      <div id="floating-qr-body" class="floating-qr-body">
+        <div class="floating-qr-code">
+          <div id="qrcode-box"></div>
+        </div>
+        <div class="floating-qr-info">
+          <div class="room-code-tag">방 코드: <strong id="room-code-display">생성 중...</strong></div>
+          <div class="room-players-tag">접속자: <span id="player-count-display">1</span>명</div>
+        </div>
+        <div class="floating-qr-url">
+          <input type="text" id="input-join-url" readonly value="" placeholder="접속 URL">
+          <button id="btn-copy-url" class="secondary-btn">복사</button>
         </div>
       </div>
     </div>

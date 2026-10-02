@@ -13,9 +13,10 @@ const viewIcon = document.getElementById('view-icon');
 const viewText = document.getElementById('view-text');
 const orientationOverlay = document.getElementById('orientation-overlay');
 const avatarModal = document.getElementById('avatar-modal');
-const roomModal = document.getElementById('room-modal');
+const floatingQrWidget = document.getElementById('floating-qr-widget');
 const roomModalBtn = document.getElementById('btn-room-modal');
-const closeRoomBtn = document.getElementById('btn-close-room');
+const toggleQrSizeBtn = document.getElementById('btn-toggle-qr-size');
+const closeQrWidgetBtn = document.getElementById('btn-close-qr-widget');
 const roomCodeDisplay = document.getElementById('room-code-display');
 const playerCountDisplay = document.getElementById('player-count-display');
 const joinUrlInput = document.getElementById('input-join-url');
@@ -83,25 +84,47 @@ if (urlParams.get('view') === 'teacher' || (!roomParam && !sessionStorage.getIte
   camera.setMode('follow');
 }
 
-// 방 QR코드 모달 제어
-if (roomModalBtn && roomModal) {
+// 플로팅 QR코드 위젯 제어 (토글/최소화/감추기)
+if (roomModalBtn && floatingQrWidget) {
   roomModalBtn.addEventListener('click', () => {
-    roomModal.classList.remove('hidden');
+    // 이미 열려 있으면 감추고, 닫혀 있으면 열기
+    const isHidden = floatingQrWidget.classList.contains('hidden');
+    if (isHidden) {
+      floatingQrWidget.classList.remove('hidden');
+      roomModalBtn.classList.add('highlight');
+    } else {
+      floatingQrWidget.classList.add('hidden');
+      roomModalBtn.classList.remove('highlight');
+    }
     sound.playSelect();
   });
 }
-if (closeRoomBtn && roomModal) {
-  closeRoomBtn.addEventListener('click', () => {
-    roomModal.classList.add('hidden');
+
+// ✕ 버튼: 위젯 완전히 숨기기 (상단 '방 QR코드' 버튼으로 언제든 다시 열 수 있음)
+if (closeQrWidgetBtn && floatingQrWidget) {
+  closeQrWidgetBtn.addEventListener('click', () => {
+    floatingQrWidget.classList.add('hidden');
+    if (roomModalBtn) roomModalBtn.classList.remove('highlight');
+    sound.playSelect();
   });
 }
+
+// ➖ 버튼: 내용만 접기(최소화) / 펼치기
+if (toggleQrSizeBtn && floatingQrWidget) {
+  toggleQrSizeBtn.addEventListener('click', () => {
+    const isMin = floatingQrWidget.classList.toggle('minimized');
+    toggleQrSizeBtn.textContent = isMin ? '➕' : '➖';
+    sound.playSelect();
+  });
+}
+
 if (copyUrlBtn && joinUrlInput) {
   copyUrlBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(joinUrlInput.value).then(() => {
-      copyUrlBtn.textContent = '복사 완료! ✔';
+      copyUrlBtn.textContent = '✔ 완료';
       sound.playItemGet();
       setTimeout(() => {
-        copyUrlBtn.textContent = '링크 복사';
+        copyUrlBtn.textContent = '복사';
       }, 2000);
     });
   });
