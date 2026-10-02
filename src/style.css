@@ -203,92 +203,168 @@ html, body {
   50% { transform: rotate(-90deg); }
 }
 
-/* 모달 및 테스트 창 */
+/* 모달 및 아바타 커스터마이징 룸 */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(60, 45, 30, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(60, 45, 30, 0.65);
+  backdrop-filter: blur(5px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 100;
-  padding: 16px;
+  padding: 12px;
 }
 
-.modal-card {
+.customizer-card {
   background: #ffffff;
   border-radius: 24px;
-  max-width: 480px;
+  max-width: 660px;
   width: 100%;
-  padding: 24px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  max-height: 94vh;
+  overflow-y: auto;
+  padding: 20px 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
   border: 2px solid var(--border-color);
-  animation: popIn 0.25s ease-out;
+  display: flex;
+  flex-direction: column;
 }
 
-@keyframes popIn {
-  from { transform: scale(0.92); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-.modal-header h2 {
+.customizer-header h2 {
   font-size: 20px;
   color: var(--text-main);
-  margin-bottom: 8px;
   text-align: center;
 }
 
-.modal-body {
-  margin: 16px 0;
-  text-align: center;
-}
-
-.sound-test-box {
-  background: var(--bg-sand);
-  border-radius: 16px;
-  padding: 16px;
-  margin-top: 14px;
-}
-
-.guide-text {
+.customizer-header p {
   font-size: 13px;
   color: var(--text-muted);
-  margin-bottom: 12px;
+  text-align: center;
+  margin-top: 4px;
+  margin-bottom: 14px;
 }
 
-.sound-btn-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+.customizer-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
 }
 
-.action-btn {
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  padding: 10px 8px;
+@media (max-width: 640px) {
+  .customizer-layout {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.preview-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 200px;
+}
+
+.avatar-canvas-wrapper {
+  background: linear-gradient(180deg, #fef3c7, #fde68a);
+  border: 3px solid #f59e0b;
+  border-radius: 20px;
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+}
+
+.nickname-input-box {
+  margin-top: 12px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nickname-input-box label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.nickname-input-box input {
+  padding: 10px 12px;
   border-radius: 12px;
-  font-size: 13px;
-  font-weight: 600;
+  border: 2px solid var(--border-color);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
   color: var(--text-main);
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.15s ease;
+  outline: none;
 }
 
-.action-btn:hover {
-  background: #fff8e8;
+.nickname-input-box input:focus {
   border-color: var(--accent-gold);
 }
 
-.action-btn:active {
-  transform: scale(0.96);
+.options-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 52vh;
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
-.modal-footer {
-  margin-top: 20px;
+.opt-section label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.opt-btn-row {
   display: flex;
-  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.custom-opt-btn {
+  background: #fdfaf3;
+  border: 1px solid var(--border-color);
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.custom-opt-btn:hover {
+  background: #fef3c7;
+  border-color: var(--accent-gold);
+}
+
+.custom-opt-btn.active {
+  background: #f59e0b;
+  color: #ffffff;
+  border-color: #d97706;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.3);
+}
+
+.color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1px solid rgba(0,0,0,0.2);
+}
+
+.customizer-footer {
+  margin-top: 18px;
 }
 
 .primary-btn {
@@ -296,7 +372,7 @@ html, body {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: #ffffff;
   border: none;
-  padding: 14px 20px;
+  padding: 13px 20px;
   border-radius: 16px;
   font-size: 16px;
   font-weight: 700;

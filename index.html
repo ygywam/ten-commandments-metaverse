@@ -51,27 +51,67 @@
       </div>
     </div>
 
-    <!-- 1단계 검증용 사운드 테스트 UI (초기 오디오 활성화 안내) -->
-    <div id="welcome-modal" class="modal-overlay">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h2>🌟 시내산 광야 메타버스</h2>
+    <!-- 아바타 커스터마이징 룸 모달 -->
+    <div id="avatar-modal" class="modal-overlay">
+      <div class="customizer-card">
+        <div class="customizer-header">
+          <h2>✨ 나만의 탐험가 아바타 만들기</h2>
+          <p>시내산 광야를 함께 걸어갈 멋진 아바타를 꾸며보세요!</p>
         </div>
-        <div class="modal-body">
-          <p>초등부 친구들과 함께 떠나는 십계명 협동 탐험!</p>
-          <div class="sound-test-box">
-            <p class="guide-text">버튼을 눌러 시내산 테마 음악과 효과음을 확인해 보세요.</p>
-            <div class="sound-btn-grid">
-              <button id="btn-test-bgm" class="action-btn">🎵 BGM 재생/정지</button>
-              <button id="btn-test-correct" class="action-btn">✨ 정답 차임</button>
-              <button id="btn-test-item" class="action-btn">💎 계명 획득</button>
-              <button id="btn-test-stone" class="action-btn">🗿 돌판 안착</button>
-              <button id="btn-test-victory" class="action-btn">🎉 완성 팡파르</button>
+
+        <div class="customizer-layout">
+          <!-- 좌측: 미리보기 및 닉네임 -->
+          <div class="preview-panel">
+            <div class="avatar-canvas-wrapper">
+              <canvas id="avatar-preview-canvas" width="220" height="260"></canvas>
+            </div>
+            <div class="nickname-input-box">
+              <label for="input-nickname">내 닉네임</label>
+              <input type="text" id="input-nickname" maxlength="8" placeholder="예: 다윗, 한나, 믿음이" value="믿음이">
+            </div>
+          </div>
+
+          <!-- 우측: 스타일 선택기 -->
+          <div class="options-panel">
+            <div class="opt-section">
+              <label>성별</label>
+              <div id="gender-options" class="opt-btn-row"></div>
+            </div>
+
+            <div class="opt-section">
+              <label>피부톤</label>
+              <div id="skin-options" class="opt-btn-row"></div>
+            </div>
+
+            <div class="opt-section">
+              <label>헤어 스타일</label>
+              <div id="hair-style-options" class="opt-btn-row"></div>
+            </div>
+
+            <div class="opt-section">
+              <label>헤어 색상</label>
+              <div id="hair-color-options" class="opt-btn-row"></div>
+            </div>
+
+            <div class="opt-section">
+              <label>상의 (옷)</label>
+              <div id="shirt-options" class="opt-btn-row"></div>
+            </div>
+
+            <div class="opt-section">
+              <label>하의 (바지/치마)</label>
+              <div id="pants-options" class="opt-btn-row"></div>
+            </div>
+
+            <div class="opt-section">
+              <label>소품 (모자/안경)</label>
+              <div id="accessory-options" class="opt-btn-row"></div>
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button id="btn-start-exploration" class="primary-btn">탐험 시작 준비 완료 🚀</button>
+
+        <div class="customizer-footer">
+          <button id="btn-confirm-avatar" class="primary-btn">시내산 광야로 출발! 🚀</button>
         </div>
       </div>
     </div>
