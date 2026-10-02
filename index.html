@@ -24,6 +24,9 @@
     <header class="top-nav">
       <div class="game-title-tag">⛰️ 십계명 메타버스</div>
       <div class="top-buttons">
+        <button id="btn-view-toggle" class="nav-btn" aria-label="시야 전환">
+          <span id="view-icon">🔍</span> <span id="view-text">전체 뷰</span>
+        </button>
         <button id="btn-sound-toggle" class="nav-btn" aria-label="음소거 토글">
           <span id="sound-icon">🔊</span> 사운드
         </button>
@@ -63,7 +66,7 @@
           <!-- 좌측: 미리보기 및 닉네임 -->
           <div class="preview-panel">
             <div class="avatar-canvas-wrapper">
-              <canvas id="avatar-preview-canvas" width="220" height="260"></canvas>
+              <canvas id="avatar-preview-canvas" width="220" height="280"></canvas>
             </div>
             <div class="nickname-input-box">
               <label for="input-nickname">내 닉네임</label>
@@ -71,42 +74,13 @@
             </div>
           </div>
 
-          <!-- 우측: 스타일 선택기 -->
+          <!-- 우측: 8인 8색 성경 탐험가 캐릭터 카드 선택기 -->
           <div class="options-panel">
-            <div class="opt-section">
-              <label>성별</label>
-              <div id="gender-options" class="opt-btn-row"></div>
+            <div class="preset-section-header">
+              <label>탐험가 아바타 선택 (8종)</label>
+              <span class="preset-sub-text">원하는 캐릭터 카드를 터치하세요!</span>
             </div>
-
-            <div class="opt-section">
-              <label>피부톤</label>
-              <div id="skin-options" class="opt-btn-row"></div>
-            </div>
-
-            <div class="opt-section">
-              <label>헤어 스타일</label>
-              <div id="hair-style-options" class="opt-btn-row"></div>
-            </div>
-
-            <div class="opt-section">
-              <label>헤어 색상</label>
-              <div id="hair-color-options" class="opt-btn-row"></div>
-            </div>
-
-            <div class="opt-section">
-              <label>상의 (옷)</label>
-              <div id="shirt-options" class="opt-btn-row"></div>
-            </div>
-
-            <div class="opt-section">
-              <label>하의 (바지/치마)</label>
-              <div id="pants-options" class="opt-btn-row"></div>
-            </div>
-
-            <div class="opt-section">
-              <label>소품 (모자/안경)</label>
-              <div id="accessory-options" class="opt-btn-row"></div>
-            </div>
+            <div id="preset-cards-container" class="preset-cards-grid"></div>
           </div>
         </div>
 

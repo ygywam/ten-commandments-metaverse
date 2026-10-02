@@ -7,6 +7,9 @@ import { AvatarCustomizer } from './components/avatarCustomizer.js';
 // DOM 요소 참조
 const soundToggleBtn = document.getElementById('btn-sound-toggle');
 const soundIcon = document.getElementById('sound-icon');
+const viewToggleBtn = document.getElementById('btn-view-toggle');
+const viewIcon = document.getElementById('view-icon');
+const viewText = document.getElementById('view-text');
 const orientationOverlay = document.getElementById('orientation-overlay');
 const avatarModal = document.getElementById('avatar-modal');
 const canvas = document.getElementById('game-canvas');
@@ -17,6 +20,16 @@ const world = new World();
 const camera = new Camera(window.innerWidth, window.innerHeight, world.width, world.height);
 const input = new InputController();
 
+// URL 파라미터 확인 (교사용 전체 뷰 기본 모드 지원)
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('view') === 'teacher') {
+  camera.setMode('overview');
+  if (viewIcon && viewText) {
+    viewIcon.textContent = '👤';
+    viewText.textContent = '캐릭터 뷰';
+  }
+}
+
 // 로컬 플레이어 아바타 상태
 const player = {
   x: 2110,      // 모세 앞마당(성막 앞)에서 시작
@@ -26,13 +39,15 @@ const player = {
   isMoving: false,
   walkCycle: 0,
   facing: 'down',
-  style: null
+  style: null,
+  preset: null
 };
 
 // 아바타 커스터마이저 초기화
-new AvatarCustomizer((nickname, style) => {
+new AvatarCustomizer((nickname, style, preset) => {
   player.nickname = nickname;
   player.style = style;
+  player.preset = preset;
   avatarModal.style.display = 'none';
 
   sound.playSelect();
@@ -69,6 +84,19 @@ soundToggleBtn.addEventListener('click', () => {
   const isMuted = sound.toggleMute();
   soundIcon.textContent = isMuted ? '🔇' : '🔊';
 });
+
+// 카메라 뷰 모드 토글 (교사 전체 뷰 vs 학생 캐릭터 뷰)
+if (viewToggleBtn) {
+  viewToggleBtn.addEventListener('click', () => {
+    const isOverview = camera.mode === 'overview';
+    const nextMode = isOverview ? 'follow' : 'overview';
+    camera.setMode(nextMode);
+
+    viewIcon.textContent = nextMode === 'overview' ? '👤' : '🔍';
+    viewText.textContent = nextMode === 'overview' ? '캐릭터 뷰' : '전체 뷰';
+    sound.playSelect();
+  });
+}
 
 // 게임 루프
 function gameLoop() {
@@ -134,8 +162,8 @@ function render() {
   // 1. 제공된 시내산 광야 맵 및 랜드마크 렌더링
   world.renderBackground(ctx);
 
-  // 2. 플레이어 아바타 렌더링 (커스텀 스타일 완벽 반영)
-  if (player.style) {
+  // 2. 플레이어 아바타 렌더링 (선택된 캐릭터 완벽 반영)
+  if (player.preset || player.style) {
     world.renderAvatar(ctx, player);
   }
 

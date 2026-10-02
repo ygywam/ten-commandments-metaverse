@@ -308,59 +308,93 @@ html, body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-height: 52vh;
+  gap: 12px;
+  max-height: 58vh;
   overflow-y: auto;
   padding-right: 6px;
 }
 
-.opt-section label {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-muted);
-  display: block;
-  margin-bottom: 4px;
-}
-
-.opt-btn-row {
+.preset-section-header {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.custom-opt-btn {
-  background: #fdfaf3;
-  border: 1px solid var(--border-color);
-  padding: 6px 12px;
-  border-radius: 10px;
-  font-size: 12px;
-  font-weight: 600;
+.preset-section-header label {
+  font-size: 14px;
+  font-weight: 700;
   color: var(--text-main);
-  cursor: pointer;
+}
+
+.preset-sub-text {
+  font-size: 12px;
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+.preset-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media (min-width: 540px) {
+  .preset-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.avatar-preset-card {
+  background: #fdfaf3;
+  border: 2px solid var(--border-color);
+  border-radius: 16px;
+  padding: 8px;
   display: flex;
   align-items: center;
-  gap: 5px;
-  transition: all 0.15s ease;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.custom-opt-btn:hover {
+.avatar-preset-card:hover {
   background: #fef3c7;
   border-color: var(--accent-gold);
+  transform: translateY(-2px);
 }
 
-.custom-opt-btn.active {
-  background: #f59e0b;
-  color: #ffffff;
+.avatar-preset-card.active {
+  background: #fffbeb;
   border-color: #d97706;
-  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.3);
+  border-width: 3px;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.25);
 }
 
-.color-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  display: inline-block;
-  border: 1px solid rgba(0,0,0,0.2);
+.avatar-preset-card canvas {
+  border-radius: 10px;
+  background: #fffdf7;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.preset-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.preset-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.preset-gender {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(0,0,0,0.05);
+  padding: 2px 6px;
+  border-radius: 6px;
+  width: fit-content;
 }
 
 .customizer-footer {

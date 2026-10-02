@@ -1,4 +1,4 @@
-// 2D 시내산 광야 메타버스 월드 매니저 (충돌 감지 및 디테일 아바타 렌더러)
+// 2D 시내산 광야 메타버스 월드 매니저 (고화질 아바타 스프라이트 렌더러)
 
 export class World {
   constructor() {
@@ -12,7 +12,15 @@ export class World {
       this.isMapLoaded = true;
     };
 
-    // 모세 NPC 위치 (성막 앞 제단)
+    // 아바타 시트 로드
+    this.avatarSheet = new Image();
+    this.isAvatarSheetLoaded = false;
+    this.avatarSheet.src = './src/assets/avatars_sheet.jpg';
+    this.avatarSheet.onload = () => {
+      this.isAvatarSheetLoaded = true;
+    };
+
+    // 모세 NPC 위치
     this.moses = {
       x: 2110,
       y: 920,
@@ -35,40 +43,29 @@ export class World {
       { id: 10, name: '제10계명 (탐내지 말라)', x: 800, y: 1720, icon: '📜' }
     ];
 
-    // 이동 불가 장애물 구역 (하늘/시내산 꼭대기, 오아시스 연못 내부, 외곽 절벽)
+    // 이동 불가 장애물 구역
     this.obstacles = [
-      // 상단 하늘 및 험준한 산악 정상 (y < 620, 단 성막 진입 통로 1950~2250 제외)
       { type: 'box', x: 0, y: 0, w: 1950, h: 650 },
       { type: 'box', x: 2260, y: 0, w: 1836, h: 650 },
       { type: 'box', x: 1950, y: 0, w: 310, h: 520 },
-
-      // 좌상단 오아시스 호수
       { type: 'circle', x: 420, y: 1470, r: 120 },
-      // 우상단 오아시스 호수
       { type: 'circle', x: 3630, y: 1880, r: 110 },
-      // 우측 중단 연못
       { type: 'circle', x: 3670, y: 1060, r: 90 },
-      // 좌하단 오아시스 연못
       { type: 'circle', x: 810, y: 1420, r: 85 }
     ];
   }
 
-  // 좌표 이동 가능 여부 검사 (충돌 감지)
   isWalkable(x, y) {
-    // 맵 외곽 경계
     if (x < 70 || x > this.width - 70 || y < 150 || y > this.height - 90) {
       return false;
     }
-
-    // 장애물 구역 검사
     for (const obs of this.obstacles) {
       if (obs.type === 'box') {
         if (x >= obs.x && x <= obs.x + obs.w && y >= obs.y && y <= obs.y + obs.h) {
           return false;
         }
       } else if (obs.type === 'circle') {
-        const dist = Math.hypot(x - obs.x, y - obs.y);
-        if (dist < obs.r) {
+        if (Math.hypot(x - obs.x, y - obs.y) < obs.r) {
           return false;
         }
       }
@@ -89,7 +86,7 @@ export class World {
   renderLandmarks(ctx) {
     const time = Date.now() * 0.003;
 
-    // 10개 계명 스팟 렌더링
+    // 10개 계명 스팟
     this.commandmentSpots.forEach((spot) => {
       const floatY = Math.sin(time + spot.id) * 6;
 
@@ -110,7 +107,6 @@ export class World {
       ctx.textAlign = 'center';
       ctx.fillText(spot.icon, spot.x, spot.y - 20 + floatY);
 
-      // 이름표
       ctx.fillStyle = '#ffffff';
       ctx.strokeStyle = 'rgba(0,0,0,0.65)';
       ctx.lineWidth = 4;
@@ -152,112 +148,59 @@ export class World {
     ctx.fillText(`👑 ${m.name}`, m.x, m.y - 54 + mosesFloat);
   }
 
-  // 아바타 렌더링 (커스텀 스타일 완벽 반영)
+  // 고화질 레퍼런스 일러스트 기반 아바타 렌더링
   renderAvatar(ctx, player) {
-    const { x, y, nickname, isMoving, walkCycle, style } = player;
+    const { x, y, nickname, isMoving, walkCycle, preset } = player;
 
     ctx.save();
     ctx.translate(x, y);
 
     // 그림자
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
     ctx.beginPath();
-    ctx.ellipse(0, 6, 18, 9, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 8, 22, 10, 0, 0, Math.PI * 2);
     ctx.fill();
 
     const bob = isMoving ? Math.sin(walkCycle) * 3 : 0;
-    const legOffset = isMoving ? Math.sin(walkCycle) * 5 : 0;
+    const bounceWobble = isMoving ? Math.sin(walkCycle) * 0.05 : 0;
 
-    // 1. 신발
-    ctx.fillStyle = style?.shoesColor || '#4b5563';
-    ctx.fillRect(-8 + legOffset, 0, 6, 8);
-    ctx.fillRect(2 - legOffset, 0, 6, 8);
+    // 일러스트 스프라이트 렌더링
+    if (this.isAvatarSheetLoaded && preset && preset.crop) {
+      const c = preset.crop;
+      const targetW = 54;
+      const targetH = 75;
 
-    // 2. 하의
-    ctx.fillStyle = style?.pantsColor || '#2563eb';
-    ctx.fillRect(-8, -12 + bob, 16, 14);
+      ctx.save();
+      ctx.translate(0, -targetH + 10 + bob);
+      ctx.rotate(bounceWobble);
 
-    // 3. 상의
-    ctx.fillStyle = style?.shirtColor || '#f97316';
-    ctx.beginPath();
-    ctx.roundRect(-10, -26 + bob, 20, 16, 4);
-    ctx.fill();
-
-    // 4. 얼굴
-    ctx.fillStyle = style?.skinColor || '#fde047';
-    ctx.beginPath();
-    ctx.arc(0, -32 + bob, 11, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 눈
-    ctx.fillStyle = '#1c1917';
-    ctx.beginPath();
-    ctx.arc(-4, -33 + bob, 1.6, 0, Math.PI * 2);
-    ctx.arc(4, -33 + bob, 1.6, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 5. 머리카락
-    ctx.fillStyle = style?.hairColor || '#451a03';
-    if (style?.hairStyle === 'long') {
-      ctx.beginPath();
-      ctx.arc(0, -36 + bob, 12, Math.PI, Math.PI * 2);
-      ctx.fill();
-      ctx.fillRect(-12, -36 + bob, 5, 20);
-      ctx.fillRect(7, -36 + bob, 5, 20);
-    } else if (style?.hairStyle === 'ponytail') {
-      ctx.beginPath();
-      ctx.arc(0, -36 + bob, 11, Math.PI, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.ellipse(11, -38 + bob, 5, 10, Math.PI / 4, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (style?.hairStyle === 'curly') {
-      for (let i = -10; i <= 10; i += 5) {
-        ctx.beginPath();
-        ctx.arc(i, -40 + bob, 5, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      ctx.drawImage(
+        this.avatarSheet,
+        c.x, c.y, c.w, c.h,
+        -targetW / 2, 0, targetW, targetH
+      );
+      ctx.restore();
     } else {
-      ctx.beginPath();
-      ctx.arc(0, -36 + bob, 11, Math.PI, Math.PI * 2);
-      ctx.fill();
+      ctx.fillStyle = '#ea580c';
+      ctx.fillRect(-12, -40 + bob, 24, 34);
     }
 
-    // 6. 소품
-    if (style?.accessory === 'glasses') {
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 1.6;
-      ctx.strokeRect(-7, -35 + bob, 5, 4);
-      ctx.strokeRect(2, -35 + bob, 5, 4);
-    } else if (style?.accessory === 'hat') {
-      ctx.fillStyle = '#dc2626';
-      ctx.fillRect(-14, -42 + bob, 28, 5);
-      ctx.fillRect(-8, -49 + bob, 16, 8);
-    } else if (style?.accessory === 'headband') {
-      ctx.fillStyle = '#3b82f6';
-      ctx.fillRect(-10, -38 + bob, 20, 3);
-    } else if (style?.accessory === 'flower') {
-      ctx.fillStyle = '#f43f5e';
-      ctx.beginPath();
-      ctx.arc(8, -40 + bob, 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // 7. 머리 위 닉네임 명찰
+    // 머리 위 닉네임 명찰
     ctx.font = 'bold 13px sans-serif';
     ctx.textAlign = 'center';
-    const textWidth = ctx.measureText(nickname || '탐험가').width;
+    const nick = nickname || '탐험가';
+    const textWidth = ctx.measureText(nick).width;
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
     ctx.strokeStyle = '#b45309';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(-textWidth / 2 - 8, -62 + bob, textWidth + 16, 20, 10);
+    ctx.roundRect(-textWidth / 2 - 8, -84 + bob, textWidth + 16, 22, 11);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = '#372719';
-    ctx.fillText(nickname || '탐험가', 0, -47 + bob);
+    ctx.fillStyle = '#1c1917';
+    ctx.fillText(nick, 0, -68 + bob);
 
     ctx.restore();
   }
