@@ -24,6 +24,9 @@
     <header class="top-nav">
       <div class="game-title-tag">⛰️ 십계명 메타버스</div>
       <div class="top-buttons">
+        <button id="btn-room-modal" class="nav-btn highlight" aria-label="방 개설 및 QR코드">
+          <span id="room-icon">📱</span> <span id="room-btn-text">방 QR코드</span>
+        </button>
         <button id="btn-view-toggle" class="nav-btn" aria-label="시야 전환">
           <span id="view-icon">🔍</span> <span id="view-text">전체 뷰</span>
         </button>
@@ -100,6 +103,30 @@
 
         <div class="customizer-footer">
           <button id="btn-confirm-avatar" class="primary-btn">시내산 광야로 출발! 🚀</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 교사용 방 개설 & 학생 모바일 접속 QR코드 모달 -->
+    <div id="room-modal" class="modal-overlay hidden">
+      <div class="room-card">
+        <div class="room-header">
+          <h2>📱 학생 모바일 접속 QR코드</h2>
+          <button id="btn-close-room" class="close-btn" aria-label="닫기">✕</button>
+        </div>
+        <div class="room-body">
+          <p class="room-desc">스마트폰 카메라로 아래 QR코드를 비추면 즉시 입장할 수 있습니다!</p>
+          <div class="qr-container">
+            <div id="qrcode-box"></div>
+          </div>
+          <div class="room-info-box">
+            <div class="room-code-tag">방 코드: <strong id="room-code-display">생성 중...</strong></div>
+            <div class="room-players-tag">현재 접속자: <span id="player-count-display">1</span>명</div>
+          </div>
+          <div class="room-url-box">
+            <input type="text" id="input-join-url" readonly value="">
+            <button id="btn-copy-url" class="secondary-btn">링크 복사</button>
+          </div>
         </div>
       </div>
     </div>

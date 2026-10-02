@@ -3,6 +3,7 @@ import { Camera } from './engine/camera.js';
 import { World } from './engine/world.js';
 import { InputController } from './controls/inputController.js';
 import { AvatarCustomizer } from './components/avatarCustomizer.js';
+import { NetworkManager } from './network/networkManager.js';
 
 // DOM 요소 참조
 const soundToggleBtn = document.getElementById('btn-sound-toggle');
@@ -12,6 +13,14 @@ const viewIcon = document.getElementById('view-icon');
 const viewText = document.getElementById('view-text');
 const orientationOverlay = document.getElementById('orientation-overlay');
 const avatarModal = document.getElementById('avatar-modal');
+const roomModal = document.getElementById('room-modal');
+const roomModalBtn = document.getElementById('btn-room-modal');
+const closeRoomBtn = document.getElementById('btn-close-room');
+const roomCodeDisplay = document.getElementById('room-code-display');
+const playerCountDisplay = document.getElementById('player-count-display');
+const joinUrlInput = document.getElementById('input-join-url');
+const copyUrlBtn = document.getElementById('btn-copy-url');
+const qrcodeBox = document.getElementById('qrcode-box');
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 
@@ -20,14 +29,82 @@ const world = new World();
 const camera = new Camera(window.innerWidth, window.innerHeight, world.width, world.height);
 const input = new InputController();
 
-// URL 파라미터 확인 (교사용 전체 뷰 기본 모드 지원)
+// 원격 접속 플레이어 맵 (ID -> 플레이어 객체)
+const remotePlayers = new Map();
+
+// 네트워크 매니저 인스턴스
+const network = new NetworkManager(
+  // 1. 원격 플레이어 상태 갱신 콜백
+  (updatedPlayers) => {
+    remotePlayers.clear();
+    for (const [id, p] of updatedPlayers.entries()) {
+      remotePlayers.set(id, p);
+    }
+    if (playerCountDisplay) {
+      playerCountDisplay.textContent = (remotePlayers.size + 1).toString();
+    }
+  },
+  // 2. 호스트 준비 완료 콜백 (QR 생성)
+  (roomId, joinUrl) => {
+    if (roomCodeDisplay) roomCodeDisplay.textContent = roomId;
+    if (joinUrlInput) joinUrlInput.value = joinUrl;
+    if (qrcodeBox && window.QRCode) {
+      qrcodeBox.innerHTML = '';
+      new window.QRCode(qrcodeBox, {
+        text: joinUrl,
+        width: 180,
+        height: 180,
+        colorDark: '#78350f',
+        colorLight: '#ffffff',
+        correctLevel: window.QRCode.CorrectLevel.M
+      });
+    }
+  }
+);
+
+// URL 파라미터 확인 (교사용 전체 뷰 기본 모드 및 룸 코드)
 const urlParams = new URLSearchParams(window.location.search);
-if (urlParams.get('view') === 'teacher') {
+const roomParam = urlParams.get('room');
+
+if (urlParams.get('view') === 'teacher' || (!roomParam && !sessionStorage.getItem('joined_room'))) {
+  // 교사(호스트) 기본 모드 또는 첫 개설자: 방 자동 생성
   camera.setMode('overview');
   if (viewIcon && viewText) {
     viewIcon.textContent = '👤';
     viewText.textContent = '캐릭터 뷰';
   }
+  // 교사 방 개설
+  network.createRoom();
+} else if (roomParam) {
+  // 학생 클라이언트 모드: 주어진 방 코드로 접속
+  sessionStorage.setItem('joined_room', roomParam);
+  network.joinRoom(roomParam);
+  // 학생은 아바타 팔로우 뷰 기본
+  camera.setMode('follow');
+}
+
+// 방 QR코드 모달 제어
+if (roomModalBtn && roomModal) {
+  roomModalBtn.addEventListener('click', () => {
+    roomModal.classList.remove('hidden');
+    sound.playSelect();
+  });
+}
+if (closeRoomBtn && roomModal) {
+  closeRoomBtn.addEventListener('click', () => {
+    roomModal.classList.add('hidden');
+  });
+}
+if (copyUrlBtn && joinUrlInput) {
+  copyUrlBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(joinUrlInput.value).then(() => {
+      copyUrlBtn.textContent = '복사 완료! ✔';
+      sound.playItemGet();
+      setTimeout(() => {
+        copyUrlBtn.textContent = '링크 복사';
+      }, 2000);
+    });
+  });
 }
 
 // 로컬 플레이어 아바타 상태
@@ -118,19 +195,32 @@ canvas.addEventListener('click', (e) => {
   const screenY = e.clientY - rect.top;
   const worldPos = camera.screenToWorld(screenX, screenY);
 
-  // 내 아바타(또는 접속자) 근처 클릭 검사 (반경 45px)
+  // 1. 내 아바타 근처 클릭 검사
   const dist = Math.hypot(worldPos.x - player.x, worldPos.y - player.y);
   if (dist < 50) {
     camera.setFollowTarget(player);
     viewIcon.textContent = '🔍';
     viewText.textContent = '전체 뷰';
     sound.playSelect();
-  } else {
-    // 빈 배경 클릭 시 배경 고정 전체 뷰로 전환
-    camera.clearFollowTarget();
-    viewIcon.textContent = '👤';
-    viewText.textContent = '캐릭터 뷰';
+    return;
   }
+
+  // 2. 접속 중인 다른 학생 캐릭터 근처 클릭 검사 (선택 학생 추적 관찰)
+  for (const remotePlayer of remotePlayers.values()) {
+    const distRemote = Math.hypot(worldPos.x - remotePlayer.x, worldPos.y - remotePlayer.y);
+    if (distRemote < 50) {
+      camera.setFollowTarget(remotePlayer);
+      viewIcon.textContent = '🔍';
+      viewText.textContent = '전체 뷰';
+      sound.playSelect();
+      return;
+    }
+  }
+
+  // 3. 빈 배경 클릭 시 배경 고정 전체 뷰로 전환
+  camera.clearFollowTarget();
+  viewIcon.textContent = '👤';
+  viewText.textContent = '캐릭터 뷰';
 });
 
 // 게임 루프
@@ -165,6 +255,9 @@ function update() {
   // 카메라가 플레이어를 스무스하게 추적
   camera.update(player.x, player.y);
 
+  // 실시간 네트워크 상태 동기화 전송
+  network.setLocalState(player);
+
   // 상호작용 액션 감지
   if (action) {
     checkInteraction();
@@ -197,7 +290,14 @@ function render() {
   // 1. 제공된 시내산 광야 맵 및 랜드마크 렌더링
   world.renderBackground(ctx);
 
-  // 2. 플레이어 아바타 렌더링 (4프레임 실제 보행 스프라이트)
+  // 2. 다른 접속 학생들의 아바타 렌더링
+  for (const remotePlayer of remotePlayers.values()) {
+    if (remotePlayer.custom) {
+      world.renderAvatar(ctx, remotePlayer);
+    }
+  }
+
+  // 3. 로컬 내 플레이어 아바타 렌더링
   if (player.custom) {
     world.renderAvatar(ctx, player);
   }

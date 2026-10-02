@@ -465,3 +465,140 @@ html, body {
   background: linear-gradient(135deg, #d97706, #b45309);
   transform: translateY(-2px);
 }
+
+/* 방 QR코드 버튼 하이라이트 */
+.nav-btn.highlight {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #b45309;
+}
+
+.nav-btn.highlight:hover {
+  background: #fde68a;
+}
+
+/* 교사용 방 QR코드 팝업 카드 */
+.room-card {
+  background: var(--bg-card);
+  width: 90%;
+  max-width: 440px;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 12px 36px rgba(120, 80, 40, 0.22);
+  border: 2px solid var(--border-color);
+  text-align: center;
+  animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.room-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.room-header h2 {
+  font-size: 19px;
+  font-weight: 800;
+  color: #78350f;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.close-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.room-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.qr-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 2px dashed #f59e0b;
+  margin-bottom: 16px;
+  min-height: 200px;
+}
+
+#qrcode-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#qrcode-box img {
+  border-radius: 8px;
+}
+
+.room-info-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  padding: 10px 16px;
+  border-radius: 12px;
+  margin-bottom: 14px;
+  font-size: 14px;
+}
+
+.room-code-tag strong {
+  color: #b45309;
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+.room-players-tag {
+  color: #047857;
+  font-weight: 700;
+}
+
+.room-url-box {
+  display: flex;
+  gap: 8px;
+}
+
+.room-url-box input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 12px;
+  color: #6b7280;
+  background: #f9fafb;
+}
+
+.secondary-btn {
+  background: #ffffff;
+  border: 1.5px solid #d97706;
+  color: #b45309;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.secondary-btn:hover {
+  background: #fef3c7;
+}
+
