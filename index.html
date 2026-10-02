@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>십계명 메타버스 - 시내산 광야 대탐험</title>
+  <link rel="stylesheet" href="./src/style.css">
+  <!-- 실시간 P2P WebRTC 라이브러리 및 QR코드 생성 라이브러리 -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- 모바일 세로 모드 경고 오버레이 (가로 전환 안내) -->
+    <div id="orientation-overlay" class="orientation-overlay hidden">
+      <div class="orientation-box">
+        <div class="phone-rotate-icon">📱 ➔ 🔄</div>
+        <h2>화면을 가로로 돌려주세요!</h2>
+        <p>십계명 메타버스는 넓은 가로 화면에 최적화되어 있습니다.</p>
+      </div>
+    </div>
+
+    <!-- 우측 상단 상시 컨트롤러 (음소거 버튼) -->
+    <header class="top-nav">
+      <div class="game-title-tag">⛰️ 십계명 메타버스</div>
+      <div class="top-buttons">
+        <button id="btn-sound-toggle" class="nav-btn" aria-label="음소거 토글">
+          <span id="sound-icon">🔊</span> 사운드
+        </button>
+      </div>
+    </header>
+
+    <!-- 메인 캔버스 뷰포트 (게임 화면) -->
+    <div id="game-container">
+      <canvas id="game-canvas"></canvas>
+    </div>
+
+    <!-- 1단계 검증용 사운드 테스트 UI (초기 오디오 활성화 안내) -->
+    <div id="welcome-modal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>🌟 시내산 광야 메타버스</h2>
+        </div>
+        <div class="modal-body">
+          <p>초등부 친구들과 함께 떠나는 십계명 협동 탐험!</p>
+          <div class="sound-test-box">
+            <p class="guide-text">버튼을 눌러 시내산 테마 음악과 효과음을 확인해 보세요.</p>
+            <div class="sound-btn-grid">
+              <button id="btn-test-bgm" class="action-btn">🎵 BGM 재생/정지</button>
+              <button id="btn-test-correct" class="action-btn">✨ 정답 차임</button>
+              <button id="btn-test-item" class="action-btn">💎 계명 획득</button>
+              <button id="btn-test-stone" class="action-btn">🗿 돌판 안착</button>
+              <button id="btn-test-victory" class="action-btn">🎉 완성 팡파르</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-start-exploration" class="primary-btn">탐험 시작 준비 완료 🚀</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

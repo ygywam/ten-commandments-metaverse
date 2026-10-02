@@ -1,0 +1,243 @@
+/* 십계명 메타버스 - 밝고 따뜻한 광야/시내산 테마 스타일 (라이트 모드 고정) */
+
+:root {
+  --bg-primary: #fffdf7;
+  --bg-sand: #f8edd7;
+  --bg-card: #ffffff;
+  --text-main: #3d312a;
+  --text-muted: #7d6b5c;
+  --accent-gold: #e69c24;
+  --accent-blue: #3b82f6;
+  --accent-green: #22c55e;
+  --border-color: #e5d8be;
+  --shadow: 0 4px 14px rgba(120, 80, 40, 0.12);
+  --font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-sand);
+  color: var(--text-main);
+  font-family: var(--font-family);
+}
+
+#app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 상단 네비게이션 */
+.top-nav {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.game-title-tag {
+  background: rgba(255, 255, 255, 0.92);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 15px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  pointer-events: auto;
+}
+
+.top-buttons {
+  pointer-events: auto;
+}
+
+.nav-btn {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: all 0.2s ease;
+  color: var(--text-main);
+}
+
+.nav-btn:hover {
+  background: #fff8e8;
+  transform: translateY(-1px);
+}
+
+/* 캔버스 컨테이너 */
+#game-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+#game-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 모바일 가로 전환 안내 오버레이 */
+.orientation-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 250, 240, 0.98);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  text-align: center;
+  padding: 24px;
+}
+
+.orientation-overlay.hidden {
+  display: none;
+}
+
+.orientation-box {
+  background: #ffffff;
+  padding: 32px 24px;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(140, 90, 30, 0.15);
+  border: 2px solid var(--accent-gold);
+}
+
+.phone-rotate-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  animation: rotateGuide 2s infinite ease-in-out;
+}
+
+@keyframes rotateGuide {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-90deg); }
+}
+
+/* 모달 및 테스트 창 */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(60, 45, 30, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+.modal-card {
+  background: #ffffff;
+  border-radius: 24px;
+  max-width: 480px;
+  width: 100%;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  border: 2px solid var(--border-color);
+  animation: popIn 0.25s ease-out;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.modal-header h2 {
+  font-size: 20px;
+  color: var(--text-main);
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.modal-body {
+  margin: 16px 0;
+  text-align: center;
+}
+
+.sound-test-box {
+  background: var(--bg-sand);
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 14px;
+}
+
+.guide-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.sound-btn-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.action-btn {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  padding: 10px 8px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.15s ease;
+}
+
+.action-btn:hover {
+  background: #fff8e8;
+  border-color: var(--accent-gold);
+}
+
+.action-btn:active {
+  transform: scale(0.96);
+}
+
+.modal-footer {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.primary-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  border: none;
+  padding: 14px 20px;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35);
+  transition: all 0.2s ease;
+}
+
+.primary-btn:hover {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  transform: translateY(-2px);
+}
