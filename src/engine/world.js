@@ -73,42 +73,64 @@ export class World {
     return true;
   }
 
-  renderBackground(ctx) {
+  renderBackground(ctx, solvedSpots = new Set()) {
     if (this.isMapLoaded) {
       ctx.drawImage(this.mapImage, 0, 0, this.width, this.height);
     } else {
       ctx.fillStyle = '#eddcb9';
       ctx.fillRect(0, 0, this.width, this.height);
     }
-    this.renderLandmarks(ctx);
+    this.renderLandmarks(ctx, solvedSpots);
   }
 
-  renderLandmarks(ctx) {
+  renderLandmarks(ctx, solvedSpots = new Set()) {
     const time = Date.now() * 0.003;
 
     // 10개 계명 스팟
     this.commandmentSpots.forEach((spot) => {
+      const isSolved = solvedSpots.has(spot.id);
       const floatY = Math.sin(time + spot.id) * 6;
 
-      ctx.fillStyle = 'rgba(230, 156, 36, 0.28)';
+      // 그림자
+      ctx.fillStyle = isSolved ? 'rgba(34, 197, 94, 0.35)' : 'rgba(230, 156, 36, 0.28)';
       ctx.beginPath();
-      ctx.ellipse(spot.x, spot.y, 32, 16, 0, 0, Math.PI * 2);
+      ctx.ellipse(spot.x, spot.y, 34, 18, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = '#fffdf7';
-      ctx.strokeStyle = '#c2923d';
+      // 완료 시 찬란한 회전 후광
+      if (isSolved) {
+        ctx.strokeStyle = '#22c55e';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.arc(spot.x, spot.y - 28 + floatY, 32, time, time + Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // 비석 상자
+      ctx.fillStyle = isSolved ? '#f0fdf4' : '#fffdf7';
+      ctx.strokeStyle = isSolved ? '#22c55e' : '#c2923d';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.roundRect(spot.x - 24, spot.y - 52 + floatY, 48, 48, 8);
       ctx.fill();
       ctx.stroke();
 
+      // 아이콘 및 체크 배지
       ctx.font = '22px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(spot.icon, spot.x, spot.y - 20 + floatY);
 
-      ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = 'rgba(0,0,0,0.65)';
+      if (isSolved) {
+        ctx.font = 'bold 16px sans-serif';
+        ctx.fillStyle = '#22c55e';
+        ctx.fillText('✔', spot.x + 18, spot.y - 42 + floatY);
+      }
+
+      // 이름 텍스트
+      ctx.fillStyle = isSolved ? '#15803d' : '#ffffff';
+      ctx.strokeStyle = isSolved ? '#ffffff' : 'rgba(0,0,0,0.65)';
       ctx.lineWidth = 4;
       ctx.font = 'bold 13px sans-serif';
       ctx.strokeText(spot.name, spot.x, spot.y - 60 + floatY);

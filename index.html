@@ -40,6 +40,11 @@
     <div id="game-container">
       <canvas id="game-canvas"></canvas>
 
+      <!-- 비석/모세 근접 시 상호작용 힌트 툴팁 -->
+      <div id="proximity-hint" class="proximity-hint hidden">
+        <span class="hint-key">Space</span> 또는 <span class="hint-touch">📜 상호작용</span> 터치
+      </div>
+
       <!-- 모바일 가상 조작 컨트롤러 UI (터치 환경) -->
       <div id="mobile-controls" class="mobile-controls">
         <div id="joystick-zone" class="joystick-zone">
@@ -53,6 +58,27 @@
             <span class="action-icon">📜</span>
             <span class="action-text">상호작용</span>
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 십계명 성경 퀴즈 모달 -->
+    <div id="quiz-modal" class="modal-overlay hidden">
+      <div class="quiz-card">
+        <div class="quiz-header">
+          <h2 id="quiz-title">제1계명 퀴즈</h2>
+          <button id="btn-close-quiz" class="close-btn" aria-label="닫기">✕</button>
+        </div>
+        <div class="quiz-verse-box">
+          <p id="quiz-verse">📖 성경 구절</p>
+        </div>
+        <div class="quiz-body">
+          <h3 id="quiz-question" class="quiz-question">문제 내용이 여기에 표시됩니다.</h3>
+          <div id="quiz-options-container" class="quiz-options-list"></div>
+          <div id="quiz-feedback" class="quiz-feedback hidden"></div>
+        </div>
+        <div class="quiz-footer">
+          <button id="btn-quiz-action" class="primary-btn hidden">계명 조각 챙기기 🎒</button>
         </div>
       </div>
     </div>

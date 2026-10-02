@@ -4,6 +4,8 @@ import { World } from './engine/world.js';
 import { InputController } from './controls/inputController.js';
 import { AvatarCustomizer } from './components/avatarCustomizer.js';
 import { NetworkManager } from './network/networkManager.js';
+import { COMMANDMENTS_DATA } from './data/commandmentsData.js';
+import { QuizModal } from './components/quizModal.js';
 
 // DOM 요소 참조
 const soundToggleBtn = document.getElementById('btn-sound-toggle');
@@ -22,8 +24,18 @@ const playerCountDisplay = document.getElementById('player-count-display');
 const joinUrlInput = document.getElementById('input-join-url');
 const copyUrlBtn = document.getElementById('btn-copy-url');
 const qrcodeBox = document.getElementById('qrcode-box');
+const proximityHint = document.getElementById('proximity-hint');
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
+
+// 플레이어 보유 계명 세트 (1~10번 조각)
+const collectedCommandments = new Set();
+
+// 퀴즈 모달 인스턴스 초기화
+const quizModal = new QuizModal((commandmentId) => {
+  collectedCommandments.add(commandmentId);
+  console.log(`[계명 획득] 제${commandmentId}계명 획득 완료! (보유 중: ${collectedCommandments.size}/10)`);
+});
 
 // 게임 시스템 인스턴스
 const world = new World();
@@ -281,25 +293,60 @@ function update() {
   // 실시간 네트워크 상태 동기화 전송
   network.setLocalState(player);
 
-  // 상호작용 액션 감지
+  // 주변 랜드마크(계명 비석, 모세) 근접 검사 및 힌트 툴팁 표시
+  updateProximityHint();
+
+  // 상호작용 액션 감지 (1회성 트리거 소비)
   if (action) {
+    input.keys.action = false;
     checkInteraction();
   }
+}
+
+// 비석이나 모세 근처에 다가갔을 때 힌트 띄우기
+function updateProximityHint() {
+  if (!proximityHint) return;
+
+  // 1. 모세와의 거리
+  const distMoses = Math.hypot(player.x - world.moses.x, player.y - world.moses.y);
+  if (distMoses < 95) {
+    proximityHint.innerHTML = `<span class="hint-key">Space</span> 모세 선지자님과 대화하기 📜`;
+    proximityHint.classList.remove('hidden');
+    return;
+  }
+
+  // 2. 10개 계명 장소와의 거리
+  for (const spot of world.commandmentSpots) {
+    const dist = Math.hypot(player.x - spot.x, player.y - spot.y);
+    if (dist < 85) {
+      const isSolved = collectedCommandments.has(spot.id);
+      proximityHint.innerHTML = `<span class="hint-key">Space</span> ${spot.name} 퀴즈 풀기 ${isSolved ? '✔' : '✨'}`;
+      proximityHint.classList.remove('hidden');
+      return;
+    }
+  }
+
+  proximityHint.classList.add('hidden');
 }
 
 function checkInteraction() {
   // 모세와의 거리 확인
   const distMoses = Math.hypot(player.x - world.moses.x, player.y - world.moses.y);
-  if (distMoses < 85) {
+  if (distMoses < 95) {
     sound.playStonePlace();
+    alert(`모세 선지자: "샬롬! 현재 ${collectedCommandments.size}/10개의 계명 조각을 모았구나! 광야 곳곳을 탐험하며 10개의 계명을 모두 완성해 오너라!"`);
     return;
   }
 
   // 10개 계명 장소와의 거리 확인
   for (const spot of world.commandmentSpots) {
     const dist = Math.hypot(player.x - spot.x, player.y - spot.y);
-    if (dist < 75) {
-      sound.playItemGet();
+    if (dist < 85) {
+      const quizData = COMMANDMENTS_DATA.find(q => q.id === spot.id);
+      if (quizData) {
+        const isSolved = collectedCommandments.has(spot.id);
+        quizModal.open(quizData, isSolved);
+      }
       break;
     }
   }
@@ -310,8 +357,8 @@ function render() {
 
   camera.applyTransform(ctx);
 
-  // 1. 제공된 시내산 광야 맵 및 랜드마크 렌더링
-  world.renderBackground(ctx);
+  // 1. 제공된 시내산 광야 맵 및 랜드마크 렌더링 (획득한 계명 비석에는 금빛 후광 및 체크 표시)
+  world.renderBackground(ctx, collectedCommandments);
 
   // 2. 다른 접속 학생들의 아바타 렌더링
   for (const remotePlayer of remotePlayers.values()) {
