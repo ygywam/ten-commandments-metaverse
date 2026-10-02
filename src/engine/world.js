@@ -1,4 +1,4 @@
-// 2D 시내산 광야 메타버스 월드 매니저 (4프레임 실제 보행 스프라이트 연동)
+// 2D 시내산 광야 메타버스 월드 매니저 (8인 고화질 캐릭터 아틀라스 연동)
 
 export class World {
   constructor() {
@@ -12,12 +12,12 @@ export class World {
       this.isMapLoaded = true;
     };
 
-    // 4프레임 걷기 스프라이트 시트 로드
-    this.walkSheet = new Image();
-    this.isWalkSheetLoaded = false;
-    this.walkSheet.src = './src/assets/walk_cycle_sheet.png';
-    this.walkSheet.onload = () => {
-      this.isWalkSheetLoaded = true;
+    // 8인 고화질 투명 아틀라스 로드 (화살표 잔상 100% 제거)
+    this.atlas = new Image();
+    this.isAtlasLoaded = false;
+    this.atlas.src = './src/assets/characters_atlas.png';
+    this.atlas.onload = () => {
+      this.isAtlasLoaded = true;
     };
 
     // 모세 NPC 위치
@@ -147,37 +147,39 @@ export class World {
     ctx.fillText(`👑 ${m.name}`, m.x, m.y - 54 + mosesFloat);
   }
 
-  // 진짜 4프레임 보행 스프라이트 렌더러
+  // 8인 고유 캐릭터 실시간 렌더러
   renderAvatar(ctx, player) {
     const { x, y, nickname, isMoving, walkCycle, custom } = player;
 
     ctx.save();
     ctx.translate(x, y);
 
-    // 그림자
+    const bob = isMoving ? Math.abs(Math.sin(walkCycle * 2)) * 5 : Math.sin(Date.now() * 0.003) * 1.5;
+    const tilt = isMoving ? Math.sin(walkCycle) * 0.06 : 0;
+
+    // 그림자 (발걸음에 따라 수축/확장)
+    const shadowScale = isMoving ? 1 - Math.abs(Math.sin(walkCycle * 2)) * 0.1 : 1;
     ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
     ctx.beginPath();
-    ctx.ellipse(0, 4, 20, 9, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 4, 22 * shadowScale, 10 * shadowScale, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    if (this.isWalkSheetLoaded) {
-      // 걷는 중일 때는 walkCycle에 따른 4프레임 교체, 멈췄을 때는 0번(기본 서있는 모습)
-      const frameIndex = isMoving ? Math.floor((walkCycle * 2) % 4) : 0;
-      const frameW = 150;
-      const frameH = 180;
-      const srcX = frameIndex * frameW;
-
-      const targetW = 68;
-      const targetH = 82;
+    if (this.isAtlasLoaded) {
+      // 선택된 캐릭터 (기본 갈렙 = index 0)
+      const charIndex = custom?.character?.index !== undefined ? custom.character.index : 0;
+      const targetW = 66;
+      const targetH = 94;
       const targetX = -targetW / 2;
-      const targetY = -targetH + 4;
+      const targetY = -targetH;
 
       ctx.save();
+      ctx.translate(0, -bob);
+      ctx.rotate(tilt);
 
-      // 스프라이트 드로우
+      // 선택된 고유 캐릭터 투명 스프라이트 렌더링 (화살표 100% 제거)
       ctx.drawImage(
-        this.walkSheet,
-        srcX, 0, frameW, frameH,
+        this.atlas,
+        charIndex * 132, 0, 132, 187,
         targetX, targetY, targetW, targetH
       );
 
@@ -185,14 +187,14 @@ export class World {
       if (custom?.accessory && custom.accessory.id !== 'none') {
         ctx.font = '16px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(custom.accessory.icon, 8, targetY + 14);
+        ctx.fillText(custom.accessory.icon, 8, targetY + 16);
       }
 
       // 소품 장비
       if (custom?.equipment && custom.equipment.id !== 'none') {
         ctx.font = '15px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(custom.equipment.icon, targetX + 4, targetY + 62);
+        ctx.fillText(custom.equipment.icon, targetX + 4, targetY + 70);
       }
 
       ctx.restore();
@@ -205,15 +207,15 @@ export class World {
     const textWidth = ctx.measureText(nick).width;
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-    ctx.strokeStyle = '#b45309';
+    ctx.strokeStyle = custom?.character?.color || '#b45309';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(-textWidth / 2 - 8, -82, textWidth + 16, 22, 11);
+    ctx.roundRect(-textWidth / 2 - 8, -98 - bob, textWidth + 16, 22, 11);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#1c1917';
-    ctx.fillText(nick, 0, -66);
+    ctx.fillText(nick, 0, -82 - bob);
 
     ctx.restore();
   }

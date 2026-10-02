@@ -1,14 +1,14 @@
-// 4프레임 실시간 보행 스프라이트 & 커스터마이징 컨트롤러
+// 8인 8색 성경 탐험가 고화질 아바타 & 파츠 커스터마이저 모듈
 
 export const AVATAR_CHARACTERS = [
-  { id: 'caleb', name: '갈렙', title: '푸른 머리띠 소년', gender: '남', tint: null },
-  { id: 'rebekah', name: '리브가', title: '순백 수건 소녀', gender: '여', tint: '#fda4af' },
-  { id: 'david', name: '다윗', title: '초록 망토 목자', gender: '남', tint: '#86efac' },
-  { id: 'miriam', name: '미리암', title: '땋은머리 찬양 소녀', gender: '여', tint: '#fde047' },
-  { id: 'joshua', name: '여호수아', title: '사막 케피예 탐험가', gender: '남', tint: '#fca5a5' },
-  { id: 'esther', name: '에스더', title: '주황 양갈래 소녀', gender: '여', tint: '#7dd3fc' },
-  { id: 'joseph', name: '요셉', title: '채색옷과 케피예', gender: '남', tint: '#93c5fd' },
-  { id: 'deborah', name: '드보라', title: '보라 후드 지도자', gender: '여', tint: '#d8b4fe' }
+  { id: 'caleb', index: 0, name: '갈렙', title: '푸른 머리띠 소년', color: '#2563eb' },
+  { id: 'rebekah', index: 1, name: '리브가', title: '순백 수건 소녀', color: '#f43f5e' },
+  { id: 'david', index: 2, name: '다윗', title: '초록 망토 목자', color: '#65a30d' },
+  { id: 'miriam', index: 3, name: '미리암', title: '땋은머리 찬양 소녀', color: '#eab308' },
+  { id: 'joshua', index: 4, name: '여호수아', title: '사막 케피예 탐험가', color: '#dc2626' },
+  { id: 'esther', index: 5, name: '에스더', title: '주황 양갈래 소녀', color: '#0284c7' },
+  { id: 'joseph', index: 6, name: '요셉', title: '채색옷과 케피예', color: '#1d4ed8' },
+  { id: 'deborah', index: 7, name: '드보라', title: '보라 후드 지도자', color: '#9333ea' }
 ];
 
 export const ACCESSORIES = [
@@ -30,31 +30,22 @@ export const EQUIPMENTS = [
   { id: 'flask', label: '물주머니', icon: '🏺' }
 ];
 
-export const CLOTH_COLORS = [
-  { id: 'default', label: '기본 튜닉', color: '#ffffff' },
-  { id: '#3b82f6', label: '푸른빛', color: '#3b82f6' },
-  { id: '#ea580c', label: '오렌지', color: '#ea580c' },
-  { id: '#eab308', label: '황금빛', color: '#eab308' },
-  { id: '#16a34a', label: '초록빛', color: '#16a34a' },
-  { id: '#9333ea', label: '자줏빛', color: '#9333ea' },
-  { id: '#e11d48', label: '붉은빛', color: '#e11d48' }
-];
-
 export class AvatarCustomizer {
   constructor(onStartCallback) {
     this.onStart = onStartCallback;
-    this.selectedChar = AVATAR_CHARACTERS[0];
+    this.selectedChar = AVATAR_CHARACTERS[0]; // 기본 갈렙
     this.selectedAcc = ACCESSORIES[0];
     this.selectedEquip = EQUIPMENTS[0];
-    this.selectedColor = CLOTH_COLORS[0];
     this.nickname = '믿음이';
 
-    // 4프레임 보행 스프라이트 시트 로드
-    this.walkSheet = new Image();
-    this.isSheetLoaded = false;
-    this.walkSheet.src = './src/assets/walk_cycle_sheet.png';
-    this.walkSheet.onload = () => {
-      this.isSheetLoaded = true;
+    // 8인 고화질 투명 아틀라스 로드 (화살표 100% 제거)
+    this.atlas = new Image();
+    this.isAtlasLoaded = false;
+    this.atlas.src = './src/assets/characters_atlas.png';
+    this.atlas.onload = () => {
+      this.isAtlasLoaded = true;
+      this.renderCharacterButtons();
+      this.drawPreview();
     };
 
     this.previewCanvas = document.getElementById('avatar-preview-canvas');
@@ -62,7 +53,7 @@ export class AvatarCustomizer {
       this.previewCtx = this.previewCanvas.getContext('2d');
     }
 
-    this.frameIndex = 0;
+    this.walkCycle = 0;
     this.animTimer = null;
 
     this.initUI();
@@ -75,13 +66,13 @@ export class AvatarCustomizer {
       nickInput.value = this.nickname;
       nickInput.addEventListener('input', (e) => {
         this.nickname = e.target.value.trim() || '탐험가';
+        this.drawPreview();
       });
     }
 
-    this.renderCharacters();
+    this.renderCharacterButtons();
     this.renderAccessories();
     this.renderEquipments();
-    this.renderColors();
 
     const startBtn = document.getElementById('btn-confirm-avatar');
     if (startBtn) {
@@ -96,15 +87,14 @@ export class AvatarCustomizer {
           this.onStart(val, {
             character: this.selectedChar,
             accessory: this.selectedAcc,
-            equipment: this.selectedEquip,
-            color: this.selectedColor
+            equipment: this.selectedEquip
           });
         }
       });
     }
   }
 
-  renderCharacters() {
+  renderCharacterButtons() {
     const container = document.getElementById('char-options-grid');
     if (!container) return;
     container.innerHTML = '';
@@ -112,13 +102,37 @@ export class AvatarCustomizer {
     AVATAR_CHARACTERS.forEach(char => {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = `custom-badge-btn ${this.selectedChar.id === char.id ? 'active' : ''}`;
-      btn.innerHTML = `<strong>${char.name}</strong><span>${char.title}</span>`;
+      const isActive = this.selectedChar.id === char.id;
+      btn.className = `custom-badge-btn ${isActive ? 'active' : ''}`;
+
+      // 미니 썸네일 캔버스
+      const mini = document.createElement('canvas');
+      mini.width = 44;
+      mini.height = 54;
+      const mCtx = mini.getContext('2d');
+
+      if (this.isAtlasLoaded) {
+        mCtx.drawImage(
+          this.atlas,
+          char.index * 132, 0, 132, 187,
+          0, 0, 44, 54
+        );
+      }
+
+      const textWrap = document.createElement('div');
+      textWrap.className = 'badge-text-wrap';
+      textWrap.innerHTML = `<strong>${char.name}</strong><span>${char.title}</span>`;
+
+      btn.appendChild(mini);
+      btn.appendChild(textWrap);
+
       btn.addEventListener('click', () => {
         this.selectedChar = char;
         container.querySelectorAll('.custom-badge-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+        this.drawPreview();
       });
+
       container.appendChild(btn);
     });
   }
@@ -129,25 +143,6 @@ export class AvatarCustomizer {
 
   renderEquipments() {
     this.buildButtonRow('equipment-options-row', EQUIPMENTS, 'selectedEquip');
-  }
-
-  renderColors() {
-    const container = document.getElementById('color-options-row');
-    if (!container) return;
-    container.innerHTML = '';
-
-    CLOTH_COLORS.forEach(item => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = `custom-color-btn ${this.selectedColor.id === item.id ? 'active' : ''}`;
-      btn.innerHTML = `<span class="color-dot" style="background:${item.color}"></span> ${item.label}`;
-      btn.addEventListener('click', () => {
-        this.selectedColor = item;
-        container.querySelectorAll('.custom-color-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-      });
-      container.appendChild(btn);
-    });
   }
 
   buildButtonRow(containerId, list, targetKey) {
@@ -165,17 +160,17 @@ export class AvatarCustomizer {
         this[targetKey] = item;
         container.querySelectorAll('.custom-pill-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+        this.drawPreview();
       });
       container.appendChild(btn);
     });
   }
 
   startAnimation() {
-    // 0.13초마다 실제 4프레임 보행 전환
     this.animTimer = setInterval(() => {
-      this.frameIndex = (this.frameIndex + 1) % 4;
+      this.walkCycle += 0.14;
       this.drawPreview();
-    }, 130);
+    }, 50);
   }
 
   stopAnimation() {
@@ -186,61 +181,63 @@ export class AvatarCustomizer {
   }
 
   drawPreview() {
-    if (!this.previewCtx || !this.previewCanvas) return;
+    if (!this.previewCtx || !this.previewCanvas || !this.isAtlasLoaded) return;
     const ctx = this.previewCtx;
     const w = this.previewCanvas.width;
     const h = this.previewCanvas.height;
 
     ctx.clearRect(0, 0, w, h);
 
-    // 배경 밝은 그라데이션
+    // 배경 부드러운 빛
     const grad = ctx.createRadialGradient(w / 2, h / 2, 20, w / 2, h / 2, 130);
     grad.addColorStop(0, '#ffffff');
     grad.addColorStop(1, '#fef3c7');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
+    // 걸음 모션 계산 (상하 밥빙 & 좌우 스텝 틸트)
+    const bob = Math.abs(Math.sin(this.walkCycle)) * 6;
+    const tilt = Math.sin(this.walkCycle) * 0.05;
+
     // 그림자
+    const shadowScale = 1 - bob * 0.04;
     ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
     ctx.beginPath();
-    ctx.ellipse(w / 2, h / 2 + 75, 36, 12, 0, 0, Math.PI * 2);
+    ctx.ellipse(w / 2, h / 2 + 75, 38 * shadowScale, 13 * shadowScale, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // 4프레임 보행 스프라이트 렌더링
-    if (this.isSheetLoaded) {
-      const frameW = 150;
-      const frameH = 180;
-      const srcX = this.frameIndex * frameW;
-      const targetW = 120;
-      const targetH = 144;
-      const targetX = (w - targetW) / 2;
-      const targetY = h / 2 - 70;
+    const char = this.selectedChar;
+    const targetW = 110;
+    const targetH = 156;
+    const targetX = -targetW / 2;
+    const targetY = -targetH;
 
-      ctx.save();
+    ctx.save();
+    ctx.translate(w / 2, h / 2 + 70 - bob);
+    ctx.rotate(tilt);
 
-      // 의상 색상 틴트 적용 (기본이 아닐 경우)
-      ctx.drawImage(
-        this.walkSheet,
-        srcX, 0, frameW, frameH,
-        targetX, targetY, targetW, targetH
-      );
+    // 선택된 캐릭터의 고유 고화질 스프라이트 렌더링 (화살표 없는 100% 투명 누끼)
+    ctx.drawImage(
+      this.atlas,
+      char.index * 132, 0, 132, 187,
+      targetX, targetY, targetW, targetH
+    );
 
-      // 머리 장식 악세서리 오버레이
-      if (this.selectedAcc && this.selectedAcc.id !== 'none') {
-        ctx.font = '24px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(this.selectedAcc.icon, w / 2 + 15, targetY + 18);
-      }
-
-      // 손 장비 소품 오버레이
-      if (this.selectedEquip && this.selectedEquip.id !== 'none') {
-        ctx.font = '24px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(this.selectedEquip.icon, targetX + 10, targetY + 110);
-      }
-
-      ctx.restore();
+    // 머리 장식 악세서리
+    if (this.selectedAcc && this.selectedAcc.id !== 'none') {
+      ctx.font = '24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(this.selectedAcc.icon, 12, targetY + 24);
     }
+
+    // 소품 장비
+    if (this.selectedEquip && this.selectedEquip.id !== 'none') {
+      ctx.font = '24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(this.selectedEquip.icon, targetX + 12, targetY + 118);
+    }
+
+    ctx.restore();
 
     // 머리 위 닉네임 태그
     ctx.font = 'bold 14px sans-serif';
@@ -249,7 +246,7 @@ export class AvatarCustomizer {
     const textWidth = ctx.measureText(nick).width;
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
-    ctx.strokeStyle = '#b45309';
+    ctx.strokeStyle = char.color || '#b45309';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.roundRect(w / 2 - textWidth / 2 - 10, h - 38, textWidth + 20, 26, 13);
