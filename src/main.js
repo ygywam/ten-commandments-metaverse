@@ -142,6 +142,30 @@ if (copyUrlBtn && joinUrlInput) {
   });
 }
 
+// 줌 확대 / 축소 버튼 바인딩 (모바일 및 PC 공용)
+const zoomInBtn = document.getElementById('btn-zoom-in');
+const zoomOutBtn = document.getElementById('btn-zoom-out');
+
+if (zoomInBtn) {
+  zoomInBtn.addEventListener('click', () => {
+    camera.zoomIn();
+    sound.playSelect();
+  });
+}
+if (zoomOutBtn) {
+  zoomOutBtn.addEventListener('click', () => {
+    camera.zoomOut();
+    sound.playSelect();
+  });
+}
+
+// 모바일 환경이거나 학생 접속 시 불필요한 QR 버튼 및 위젯 자동 숨김
+const isMobileClient = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768;
+if (roomParam || isMobileClient) {
+  if (roomModalBtn) roomModalBtn.classList.add('hidden');
+  if (floatingQrWidget) floatingQrWidget.classList.add('hidden');
+}
+
 // 로컬 플레이어 아바타 상태
 const player = {
   x: 2110,      // 모세 앞마당(성막 앞)에서 시작
@@ -154,18 +178,29 @@ const player = {
   custom: null
 };
 
+// 캐릭터 생성 완료 여부 (캐릭터 생성을 마친 후에만 인게임 진입 및 가로모드 체크)
+let isAvatarCustomized = false;
+
 // 아바타 커스터마이저 초기화 (4프레임 보행 스프라이트 & 파츠 연동)
 new AvatarCustomizer((nickname, custom) => {
   player.nickname = nickname;
   player.custom = custom;
   avatarModal.style.display = 'none';
+  isAvatarCustomized = true;
 
   sound.playSelect();
   sound.startBgm();
+
+  // 아바타 설정을 마친 후 인게임 진입 시 화면 방향 체크
+  checkOrientation();
 });
 
-// 가로 모드 감지 (모바일 환경)
+// 가로 모드 감지 (캐릭터 생성이 완료된 후 인게임에서만 가로 전환 안내)
 function checkOrientation() {
+  if (!isAvatarCustomized) {
+    orientationOverlay.classList.add('hidden');
+    return;
+  }
   const isPortrait = window.innerHeight > window.innerWidth && window.innerWidth < 768;
   if (isPortrait) {
     orientationOverlay.classList.remove('hidden');

@@ -9,14 +9,25 @@ export class Camera {
 
     this.x = worldWidth / 2;
     this.y = worldHeight / 2;
-    this.targetZoom = 1.35;
-    this.zoom = 1.35;
     this.minZoom = 0.22;
     this.maxZoom = 2.6;
     this.lerpSpeed = 0.12;
 
     this.mode = 'follow'; // 'follow' (캐릭터 추적) 또는 'overview' (배경 고정 관제)
     this.followTarget = null; // 특정 학생 관찰 대상 { x, y }
+
+    const defaultFollowZoom = this.getDefaultFollowZoom();
+    this.targetZoom = defaultFollowZoom;
+    this.zoom = defaultFollowZoom;
+  }
+
+  getDefaultFollowZoom() {
+    // 모바일(가로 화면 폭 900px 미만 또는 높이 500px 미만)에서는 맵이 너무 확대되지 않고 시야가 시원하게 확보되도록 0.65~0.85로 설정
+    const isMobileSize = this.viewportWidth < 900 || this.viewportHeight < 550;
+    if (isMobileSize) {
+      return 0.72;
+    }
+    return 1.15;
   }
 
   resize(width, height) {
@@ -33,7 +44,7 @@ export class Camera {
       this.calculateOverviewZoom();
       this.followTarget = null;
     } else {
-      this.targetZoom = 1.35;
+      this.targetZoom = this.getDefaultFollowZoom();
     }
   }
 

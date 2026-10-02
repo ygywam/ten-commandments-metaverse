@@ -19,14 +19,37 @@ export class QuizModal {
   }
 
   initEvents() {
+    // 1. ✕ 닫기 버튼
     if (this.closeBtn) {
-      this.closeBtn.addEventListener('click', () => this.hide());
-    }
-    if (this.actionBtn) {
-      this.actionBtn.addEventListener('click', () => {
+      this.closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         this.hide();
       });
     }
+
+    // 2. 계명 조각 챙기기 / 확인 액션 버튼
+    if (this.actionBtn) {
+      this.actionBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.hide();
+      });
+    }
+
+    // 3. 모달 바깥(오버레이 배경) 클릭 시 닫기
+    if (this.modalEl) {
+      this.modalEl.addEventListener('click', (e) => {
+        if (e.target === this.modalEl) {
+          this.hide();
+        }
+      });
+    }
+
+    // 4. ESC 키 누르면 닫기
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.modalEl && !this.modalEl.classList.contains('hidden')) {
+        this.hide();
+      }
+    });
   }
 
   open(quizData, isAlreadySolved = false) {
