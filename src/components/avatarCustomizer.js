@@ -1,4 +1,5 @@
-// 8인 8색 성경 탐험가 고화질 아바타 & 파츠 커스터마이저 모듈
+// 8인 8색 성경 탐험가 고화질 아바타 커스터마이저 모듈
+import { drawExplorerAvatar } from '../engine/avatarRenderer.js';
 
 export const AVATAR_CHARACTERS = [
   { id: 'caleb', index: 0, name: '갈렙', title: '푸른 머리띠 소년', color: '#2563eb' },
@@ -12,33 +13,20 @@ export const AVATAR_CHARACTERS = [
 ];
 
 export const ACCESSORIES = [
-  { id: 'none', label: '없음', icon: '✨' },
-  { id: 'crown', label: '왕관', icon: '👑' },
-  { id: 'flower', label: '꽃 장식', icon: '🌸' },
-  { id: 'star', label: '별 장식', icon: '⭐' },
-  { id: 'leaf', label: '화관', icon: '🍃' },
-  { id: 'glasses', label: '동글 안경', icon: '👓' },
-  { id: 'ribbon', label: '리본', icon: '🎀' }
+  { id: 'none', label: '기본', icon: '✨' }
 ];
 
 export const EQUIPMENTS = [
-  { id: 'none', label: '없음', icon: '—' },
-  { id: 'staff', label: '목자 지팡이', icon: '🪵' },
-  { id: 'bag', label: '가죽 가방', icon: '👜' },
-  { id: 'scroll', label: '두루마리', icon: '📜' },
-  { id: 'bedroll', label: '탐험 침낭', icon: '🛏️' },
-  { id: 'flask', label: '물주머니', icon: '🏺' }
+  { id: 'none', label: '기본', icon: '—' }
 ];
 
 export class AvatarCustomizer {
   constructor(onStartCallback) {
     this.onStart = onStartCallback;
     this.selectedChar = AVATAR_CHARACTERS[0]; // 기본 갈렙
-    this.selectedAcc = ACCESSORIES[0];
-    this.selectedEquip = EQUIPMENTS[0];
     this.nickname = '믿음이';
 
-    // 8인 고화질 투명 아틀라스 로드 (화살표 100% 제거)
+    // 8인 고화질 투명 아틀라스 로드
     this.atlas = new Image();
     this.isAtlasLoaded = false;
     this.atlas.src = './src/assets/characters_atlas.png';
@@ -71,8 +59,6 @@ export class AvatarCustomizer {
     }
 
     this.renderCharacterButtons();
-    this.renderAccessories();
-    this.renderEquipments();
 
     const startBtn = document.getElementById('btn-confirm-avatar');
     if (startBtn) {
@@ -86,8 +72,8 @@ export class AvatarCustomizer {
         if (this.onStart) {
           this.onStart(val, {
             character: this.selectedChar,
-            accessory: this.selectedAcc,
-            equipment: this.selectedEquip
+            accessory: ACCESSORIES[0],
+            equipment: EQUIPMENTS[0]
           });
         }
       });
@@ -105,17 +91,17 @@ export class AvatarCustomizer {
       const isActive = this.selectedChar.id === char.id;
       btn.className = `custom-badge-btn ${isActive ? 'active' : ''}`;
 
-      // 미니 썸네일 캔버스
+      // 미니 썸네일 캔버스 (얼굴 클로즈업)
       const mini = document.createElement('canvas');
       mini.width = 44;
-      mini.height = 54;
+      mini.height = 44;
       const mCtx = mini.getContext('2d');
 
       if (this.isAtlasLoaded) {
         mCtx.drawImage(
           this.atlas,
-          char.index * 132, 0, 132, 187,
-          0, 0, 44, 54
+          char.index * 132, 0, 132, 116,
+          0, 0, 44, 44
         );
       }
 
@@ -133,35 +119,6 @@ export class AvatarCustomizer {
         this.drawPreview();
       });
 
-      container.appendChild(btn);
-    });
-  }
-
-  renderAccessories() {
-    this.buildButtonRow('accessory-options-row', ACCESSORIES, 'selectedAcc');
-  }
-
-  renderEquipments() {
-    this.buildButtonRow('equipment-options-row', EQUIPMENTS, 'selectedEquip');
-  }
-
-  buildButtonRow(containerId, list, targetKey) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    container.innerHTML = '';
-
-    list.forEach(item => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      const isActive = this[targetKey].id === item.id;
-      btn.className = `custom-pill-btn ${isActive ? 'active' : ''}`;
-      btn.innerHTML = `<span>${item.icon}</span> ${item.label}`;
-      btn.addEventListener('click', () => {
-        this[targetKey] = item;
-        container.querySelectorAll('.custom-pill-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        this.drawPreview();
-      });
       container.appendChild(btn);
     });
   }
@@ -195,47 +152,26 @@ export class AvatarCustomizer {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
-    // 걸음 모션 계산 (상하 밥빙 & 좌우 스텝 틸트)
-    const bob = Math.abs(Math.sin(this.walkCycle)) * 6;
-    const tilt = Math.sin(this.walkCycle) * 0.05;
-
-    // 그림자
-    const shadowScale = 1 - bob * 0.04;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
-    ctx.beginPath();
-    ctx.ellipse(w / 2, h / 2 + 75, 38 * shadowScale, 13 * shadowScale, 0, 0, Math.PI * 2);
-    ctx.fill();
-
     const char = this.selectedChar;
-    const targetW = 110;
-    const targetH = 156;
-    const targetX = -targetW / 2;
-    const targetY = -targetH;
+    const charIndex = char.index !== undefined ? char.index : 0;
+    const charColor = char.color || '#2563eb';
+    const isDavid = char.id === 'david';
 
     ctx.save();
-    ctx.translate(w / 2, h / 2 + 70 - bob);
-    ctx.rotate(tilt);
+    ctx.translate(w / 2, h / 2 + 55);
 
-    // 선택된 캐릭터의 고유 고화질 스프라이트 렌더링 (화살표 없는 100% 투명 누끼)
-    ctx.drawImage(
-      this.atlas,
-      char.index * 132, 0, 132, 187,
-      targetX, targetY, targetW, targetH
-    );
-
-    // 머리 장식 악세서리
-    if (this.selectedAcc && this.selectedAcc.id !== 'none') {
-      ctx.font = '24px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(this.selectedAcc.icon, 12, targetY + 24);
-    }
-
-    // 소품 장비
-    if (this.selectedEquip && this.selectedEquip.id !== 'none') {
-      ctx.font = '24px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(this.selectedEquip.icon, targetX + 12, targetY + 118);
-    }
+    // 프리뷰는 1.7배 크기로 시원하게 렌더링
+    drawExplorerAvatar(ctx, {
+      atlas: this.atlas,
+      isAtlasLoaded: this.isAtlasLoaded,
+      charIndex,
+      charColor,
+      isDavid,
+      walkCycle: this.walkCycle,
+      isMoving: true,
+      facing: 'down',
+      scale: 1.7
+    });
 
     ctx.restore();
 
@@ -246,14 +182,14 @@ export class AvatarCustomizer {
     const textWidth = ctx.measureText(nick).width;
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
-    ctx.strokeStyle = char.color || '#b45309';
+    ctx.strokeStyle = charColor;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.roundRect(w / 2 - textWidth / 2 - 10, h - 38, textWidth + 20, 26, 13);
+    ctx.roundRect(w / 2 - textWidth / 2 - 10, h - 36, textWidth + 20, 26, 13);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#1c1917';
-    ctx.fillText(nick, w / 2, h - 20);
+    ctx.fillText(nick, w / 2, h - 18);
   }
 }

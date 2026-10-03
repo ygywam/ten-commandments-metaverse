@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="십계명 메타버스">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>십계명 메타버스 - 시내산 광야 대탐험</title>
   <link rel="stylesheet" href="./src/style.css">
   <!-- 실시간 P2P WebRTC 라이브러리 및 QR코드 생성 라이브러리 -->
@@ -24,6 +28,9 @@
     <header class="top-nav">
       <div class="game-title-tag">⛰️ 십계명 메타버스</div>
       <div class="top-buttons">
+        <button id="btn-room-badge" class="nav-btn" title="현재 접속 방 코드 (클릭 시 변경)">
+          <span>🏷️</span> <strong id="room-tag-text">SINAI-777</strong>
+        </button>
         <button id="btn-tablet-hud" class="tablet-hud-badge" title="십계명 돌판 확인">
           <span>📜</span> <span id="tablet-hud-text">돌판: 0 / 10</span>
         </button>
@@ -127,26 +134,11 @@
             </div>
           </div>
 
-          <!-- 우측: 캐릭터 및 파츠 커스터마이징 패널 -->
+          <!-- 우측: 캐릭터 선택 패널 (8인 8색 탐험가) -->
           <div class="options-panel">
             <div class="opt-section">
               <label>성경 탐험가 선택 (8인 8색)</label>
               <div id="char-options-grid" class="char-badge-grid"></div>
-            </div>
-
-            <div class="opt-section">
-              <label>머리 장식 / 악세서리</label>
-              <div id="accessory-options-row" class="opt-pill-row"></div>
-            </div>
-
-            <div class="opt-section">
-              <label>소품 / 장비</label>
-              <div id="equipment-options-row" class="opt-pill-row"></div>
-            </div>
-
-            <div class="opt-section">
-              <label>의상 색상</label>
-              <div id="color-options-row" class="opt-color-row"></div>
             </div>
           </div>
         </div>
@@ -171,12 +163,41 @@
           <div id="qrcode-box"></div>
         </div>
         <div class="floating-qr-info">
-          <div class="room-code-tag">방 코드: <strong id="room-code-display">생성 중...</strong></div>
+          <div class="room-code-tag" style="display:flex; align-items:center; gap:4px;">
+            방: <strong id="room-code-display">SINAI-777</strong>
+            <button id="btn-edit-room-code" class="qr-action-btn" title="고정 방 코드 변경">⚙️</button>
+          </div>
           <div class="room-players-tag">접속자: <span id="player-count-display">1</span>명</div>
         </div>
         <div class="floating-qr-url">
           <input type="text" id="input-join-url" readonly value="" placeholder="접속 URL">
           <button id="btn-copy-url" class="secondary-btn">복사</button>
+        </div>
+      </div>
+    <!-- iOS 사파리 전체화면(홈 화면 추가) 안내 모달 -->
+    <div id="ios-fullscreen-modal" class="modal-overlay hidden">
+      <div class="ios-fs-card">
+        <div class="ios-fs-header">
+          <h3>📱 아이폰 전체화면 앱 실행법</h3>
+          <button id="btn-close-ios-fs" class="close-btn" aria-label="닫기">✕</button>
+        </div>
+        <div class="ios-fs-body">
+          <p class="ios-fs-desc">애플 아이폰(Safari)은 브라우저 정책상 버튼 클릭만으로 주소창 숨김이 제한됩니다. 대신 아래 <strong>3단계</strong>로 상하단 바가 100% 없는 <strong>전체화면 앱</strong>으로 플레이하실 수 있습니다!</p>
+          <div class="ios-step-box">
+            <span class="step-num">1</span>
+            <div class="step-text">Safari 하단(또는 상단) 툴바의 <strong>공유 버튼( <span style="font-size:16px;">⬆️</span> )</strong> 터치</div>
+          </div>
+          <div class="ios-step-box">
+            <span class="step-num">2</span>
+            <div class="step-text">메뉴를 올려 <strong>[홈 화면에 추가]</strong> 터치</div>
+          </div>
+          <div class="ios-step-box">
+            <span class="step-num">3</span>
+            <div class="step-text">바탕화면에 생성된 아이콘을 누르면 <strong>주소창과 툴바가 완전히 사라진 전체화면</strong>으로 실행됩니다! 🚀</div>
+          </div>
+        </div>
+        <div class="ios-fs-footer">
+          <button id="btn-confirm-ios-fs" class="primary-btn">확인했습니다</button>
         </div>
       </div>
     </div>

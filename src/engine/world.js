@@ -1,4 +1,5 @@
 // 2D 시내산 광야 메타버스 월드 매니저 (8인 고화질 캐릭터 아틀라스 연동)
+import { drawExplorerAvatar } from './avatarRenderer.js';
 
 export class World {
   constructor() {
@@ -268,63 +269,30 @@ export class World {
     ctx.fillText(statusText, m.x, m.y - 72 + mosesFloat);
   }
 
-  // 8인 고유 캐릭터 실시간 렌더러
+  // 8인 고유 캐릭터 실시간 렌더러 (얼굴 일러스트 + 움직이는 몸·팔·다리)
   renderAvatar(ctx, player) {
     const { x, y, nickname, isMoving, walkCycle, custom } = player;
 
     ctx.save();
     ctx.translate(x, y);
 
-    const bob = isMoving ? Math.abs(Math.sin(walkCycle * 2)) * 5 : Math.sin(Date.now() * 0.003) * 1.5;
-    const tilt = isMoving ? Math.sin(walkCycle) * 0.06 : 0;
+    const bob = isMoving ? Math.abs(Math.sin(walkCycle * 2)) * 4.5 : Math.sin(Date.now() * 0.003) * 1.5;
+    const charIndex = custom?.character?.index !== undefined ? custom.character.index : 0;
+    const charColor = custom?.character?.color || '#2563eb';
+    const isDavid = custom?.character?.id === 'david';
 
-    // 그림자 (발걸음에 따라 수축/확장)
-    const shadowScale = isMoving ? 1 - Math.abs(Math.sin(walkCycle * 2)) * 0.1 : 1;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
-    ctx.beginPath();
-    ctx.ellipse(0, 4, 22 * shadowScale, 10 * shadowScale, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    if (this.isAtlasLoaded) {
-      // 선택된 캐릭터 (기본 갈렙 = index 0)
-      const charIndex = custom?.character?.index !== undefined ? custom.character.index : 0;
-      const targetW = 66;
-      const targetH = 94;
-      const targetX = -targetW / 2;
-      const targetY = -targetH;
-
-      ctx.save();
-      ctx.translate(0, -bob);
-      ctx.rotate(tilt);
-
-      // 왼쪽 이동 시 좌우 대칭 반전 (scaleX = -1)
-      if (player.facing === 'left') {
-        ctx.scale(-1, 1);
-      }
-
-      // 선택된 고유 캐릭터 투명 스프라이트 렌더링 (화살표 100% 제거)
-      ctx.drawImage(
-        this.atlas,
-        charIndex * 132, 0, 132, 187,
-        targetX, targetY, targetW, targetH
-      );
-
-      // 머리 장식 악세서리
-      if (custom?.accessory && custom.accessory.id !== 'none') {
-        ctx.font = '16px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(custom.accessory.icon, 8, targetY + 16);
-      }
-
-      // 소품 장비
-      if (custom?.equipment && custom.equipment.id !== 'none') {
-        ctx.font = '15px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(custom.equipment.icon, targetX + 4, targetY + 70);
-      }
-
-      ctx.restore();
-    }
+    // 몸통/팔/다리 보행 모션 + 고화질 얼굴 합성 렌더링
+    drawExplorerAvatar(ctx, {
+      atlas: this.atlas,
+      isAtlasLoaded: this.isAtlasLoaded,
+      charIndex,
+      charColor,
+      isDavid,
+      walkCycle,
+      isMoving,
+      facing: player.facing || 'down',
+      scale: 1.0
+    });
 
     // 머리 위 닉네임 명찰
     ctx.font = 'bold 13px sans-serif';
@@ -333,15 +301,15 @@ export class World {
     const textWidth = ctx.measureText(nick).width;
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-    ctx.strokeStyle = custom?.character?.color || '#b45309';
+    ctx.strokeStyle = charColor;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(-textWidth / 2 - 8, -98 - bob, textWidth + 16, 22, 11);
+    ctx.roundRect(-textWidth / 2 - 8, -96 - bob, textWidth + 16, 22, 11);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#1c1917';
-    ctx.fillText(nick, 0, -82 - bob);
+    ctx.fillText(nick, 0, -80 - bob);
 
     ctx.restore();
   }

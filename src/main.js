@@ -209,7 +209,7 @@ const network = new NetworkManager(
   },
   // 2. 호스트 준비 완료 콜백 (QR 생성)
   (roomId, joinUrl) => {
-    if (roomCodeDisplay) roomCodeDisplay.textContent = roomId;
+    updateRoomDisplay(roomId);
     if (joinUrlInput) joinUrlInput.value = joinUrl;
     if (qrcodeBox && window.QRCode) {
       qrcodeBox.innerHTML = '';
@@ -225,10 +225,64 @@ const network = new NetworkManager(
   }
 );
 
-// URL 파라미터 확인 (교사용 전체 뷰 기본 모드 및 룸 코드)
+// URL 파라미터 및 기기 환경 확인
 const urlParams = new URLSearchParams(window.location.search);
 const roomParam = urlParams.get('room');
-const isTeacher = urlParams.get('view') === 'teacher' || (!roomParam && !sessionStorage.getItem('joined_room'));
+const isMobileClient = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768;
+
+// 교사 / 학생 모드 판별: 명시적 교사 뷰(?view=teacher)이거나 PC 환경에서 파라미터 없이 열었을 때 교사 모드
+const isExplicitTeacher = urlParams.get('view') === 'teacher';
+const isTeacher = isExplicitTeacher || (!roomParam && !isMobileClient);
+
+// 방 번호 표시 및 제어 요소
+const roomBadgeBtn = document.getElementById('btn-room-badge');
+const roomTagText = document.getElementById('room-tag-text');
+const editRoomCodeBtn = document.getElementById('btn-edit-room-code');
+
+function updateRoomDisplay(code) {
+  if (roomCodeDisplay) roomCodeDisplay.textContent = code;
+  if (roomTagText) roomTagText.textContent = code;
+}
+
+// 교사 고정 방 코드 변경 버튼 (플로팅 QR 박스 ⚙️ 버튼)
+if (editRoomCodeBtn) {
+  editRoomCodeBtn.addEventListener('click', () => {
+    const currentCode = network.roomId || localStorage.getItem('sinai_fixed_room_code') || 'SINAI-777';
+    const newCode = prompt(
+      '우리 교회/학급의 고정 방 코드를 입력하세요:\n(예: 우리교회, SINAI-777, 예닮유년부)\n\n학생들은 이 코드로 언제든 홈화면 앱에서 바로 접속합니다.',
+      currentCode
+    );
+    if (newCode && newCode.trim()) {
+      const trimmed = newCode.trim().toUpperCase();
+      localStorage.setItem('sinai_fixed_room_code', trimmed);
+      sound.playSelect();
+      network.createRoom(trimmed);
+      updateRoomDisplay(trimmed);
+      alert(`🎉 고정 방 코드가 [${trimmed}] 로 설정되었습니다!\n학생들은 이제 이 방으로 계속 접속할 수 있습니다.`);
+    }
+  });
+}
+
+// 상단 네비게이션 방 배지 (🏷️ 방 번호) 클릭 시
+if (roomBadgeBtn) {
+  roomBadgeBtn.addEventListener('click', () => {
+    if (isTeacher) {
+      if (editRoomCodeBtn) editRoomCodeBtn.click();
+    } else {
+      const currentCode = network.roomId || localStorage.getItem('sinai_last_joined_room') || 'SINAI-777';
+      const newCode = prompt(
+        '접속할 선생님의 방 코드를 입력하세요:\n(예: SINAI-777, 우리교회, 예닮초등부)',
+        currentCode
+      );
+      if (newCode && newCode.trim()) {
+        const trimmed = newCode.trim().toUpperCase();
+        localStorage.setItem('sinai_last_joined_room', trimmed);
+        sound.playSelect();
+        window.location.search = `?room=${encodeURIComponent(trimmed)}`;
+      }
+    }
+  });
+}
 
 function updateGameModeUi() {
   if (modeIcon && modeText) {
@@ -244,13 +298,15 @@ function updateGameModeUi() {
 }
 
 if (isTeacher) {
-  // 교사(호스트) 기본 모드 또는 첫 개설자: 방 자동 생성
+  // 교사(호스트) 기본 모드: 고정 방 생성
   camera.setMode('overview');
   if (viewIcon && viewText) {
     viewIcon.textContent = '👤';
     viewText.textContent = '캐릭터 뷰';
   }
-  network.createRoom();
+  const savedFixedRoom = localStorage.getItem('sinai_fixed_room_code') || 'SINAI-777';
+  network.createRoom(savedFixedRoom);
+  updateRoomDisplay(network.roomId);
 
   // 학생 참가 시 방의 최신 상태(진행 상태, 모드, 랜덤 비석 좌표, 퀴즈, 협동 상태) 전송 (중간 입장자 완벽 지원)
   network.onStudentJoin = (conn) => {
@@ -307,10 +363,12 @@ if (isTeacher) {
       });
     });
   }
-} else if (roomParam) {
-  // 학생 클라이언트 모드: 주어진 방 코드로 접속
-  sessionStorage.setItem('joined_room', roomParam);
-  network.joinRoom(roomParam);
+} else {
+  // 학생 클라이언트 모드: 주어진 방 코드 또는 저장된 고정 방(localStorage) 또는 'SINAI-777'로 접속
+  const targetRoom = roomParam || localStorage.getItem('sinai_last_joined_room') || 'SINAI-777';
+  sessionStorage.setItem('joined_room', targetRoom);
+  network.joinRoom(targetRoom);
+  updateRoomDisplay(targetRoom);
   camera.setMode('follow');
 
   if (gameControlBtn) gameControlBtn.classList.add('hidden');
@@ -505,7 +563,6 @@ if (zoomOutBtn) {
 }
 
 // 모바일 환경이거나 학생 접속 시 불필요한 QR 버튼 및 위젯 자동 숨김
-const isMobileClient = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768;
 if (roomParam || isMobileClient) {
   if (roomModalBtn) roomModalBtn.classList.add('hidden');
   if (floatingQrWidget) floatingQrWidget.classList.add('hidden');
@@ -579,7 +636,32 @@ soundToggleBtn.addEventListener('click', () => {
   soundIcon.textContent = isMuted ? '🔇' : '🔊';
 });
 
-// 전체화면 토글 기능 (모바일 브라우저 주소창 숨김 및 몰입도 극대화)
+// 전체화면 토글 기능 (아이폰 Safari PWA 가이드 & 안드로이드/PC Fullscreen API)
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+const iosModal = document.getElementById('ios-fullscreen-modal');
+const closeIosBtn = document.getElementById('btn-close-ios-fs');
+const confirmIosBtn = document.getElementById('btn-confirm-ios-fs');
+
+if (closeIosBtn) {
+  closeIosBtn.addEventListener('click', () => {
+    if (iosModal) iosModal.classList.add('hidden');
+    sound.playSelect();
+  });
+}
+if (confirmIosBtn) {
+  confirmIosBtn.addEventListener('click', () => {
+    if (iosModal) iosModal.classList.add('hidden');
+    sound.playSelect();
+  });
+}
+if (iosModal) {
+  iosModal.addEventListener('click', (e) => {
+    if (e.target === iosModal) {
+      iosModal.classList.add('hidden');
+    }
+  });
+}
+
 function updateFullscreenBtn() {
   const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
   if (fullscreenIcon) fullscreenIcon.textContent = isFull ? '🗗' : '🖥️';
@@ -588,11 +670,24 @@ function updateFullscreenBtn() {
 
 if (fullscreenBtn) {
   fullscreenBtn.addEventListener('click', () => {
+    // 1. 아이폰(Safari)의 경우 브라우저 정책상 버튼을 통한 전체화면 미지원 -> 홈화면 추가 100% 전체화면 앱 가이드 안내
+    if (isIOS && !document.documentElement.requestFullscreen) {
+      if (iosModal) {
+        iosModal.classList.remove('hidden');
+      }
+      window.scrollTo(0, 1);
+      sound.playSelect();
+      return;
+    }
+
+    // 2. 안드로이드 / PC / 지원 브라우저: Fullscreen API 토글
     const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
     if (!isFull) {
       const elem = document.documentElement;
       if (elem.requestFullscreen) {
-        elem.requestFullscreen().catch(() => {});
+        elem.requestFullscreen().catch(() => {
+          if (iosModal) iosModal.classList.remove('hidden');
+        });
       } else if (elem.webkitRequestFullscreen) {
         elem.webkitRequestFullscreen();
       }

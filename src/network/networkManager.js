@@ -16,13 +16,31 @@ export class NetworkManager {
     this.sendInterval = null;
   }
 
-  // 1. 교사 모드: 방 개설 (호스트)
-  createRoom() {
+  // 유니코드(한글 등) 호환 안전 Peer ID 변환
+  toSafePeerId(roomId) {
+    const clean = (roomId || 'SINAI-777').trim().toUpperCase();
+    if (/^[A-Z0-9_-]+$/.test(clean)) {
+      return `metaverse-sinai-${clean.toLowerCase()}`;
+    }
+    const utf8Bytes = new TextEncoder().encode(clean);
+    const hex = Array.from(utf8Bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    return `metaverse-sinai-h-${hex}`;
+  }
+
+  // 1. 교사 모드: 고정 방 개설 (호스트)
+  createRoom(customRoomId = null) {
     this.isHost = true;
-    // 읽기 쉬운 무작위 6자리 방 코드 (예: SINAI-742)
-    const randomCode = Math.floor(100 + Math.random() * 900);
-    this.roomId = `SINAI-${randomCode}`;
-    const peerId = `metaverse-sinai-${this.roomId.toLowerCase()}`;
+    if (this.peer) {
+      try { this.peer.destroy(); } catch (e) {}
+      this.peer = null;
+    }
+
+    // 선생님의 고정 방 코드 확인 (기본값: 'SINAI-777' 또는 선생님 설정 코드)
+    const fixedCode = customRoomId || localStorage.getItem('sinai_fixed_room_code') || 'SINAI-777';
+    this.roomId = fixedCode.trim().toUpperCase();
+    localStorage.setItem('sinai_fixed_room_code', this.roomId);
+
+    const peerId = this.toSafePeerId(this.roomId);
 
     // PeerJS 공식 클라우드 브로커 사용
     this.peer = new window.Peer(peerId, {
@@ -30,8 +48,8 @@ export class NetworkManager {
     });
 
     this.peer.on('open', (id) => {
-      console.log('[네트워크] 호스트 방 생성 성공:', this.roomId, id);
-      const joinUrl = `${window.location.origin}${window.location.pathname}?room=${this.roomId}`;
+      console.log('[네트워크] 호스트 고정 방 생성 성공:', this.roomId, id);
+      const joinUrl = `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(this.roomId)}`;
       if (this.onHostReady) {
         this.onHostReady(this.roomId, joinUrl);
       }
@@ -43,20 +61,33 @@ export class NetworkManager {
 
     this.peer.on('error', (err) => {
       console.warn('[네트워크] 호스트 Peer 에러:', err);
-      // 만약 이미 동일 ID가 있으면 무작위 방 코드로 재시도
+      // 브라우저 새로고침 등으로 이전 연결이 덜 끊어진 경우 2초 후 자동 재시도
       if (err.type === 'unavailable-id') {
-        this.createRoom();
+        console.log('[네트워크] 이전 세션 정리 대기 중... 2초 후 재연결 시도');
+        setTimeout(() => {
+          if (this.isHost && (!this.peer || !this.peer.open)) {
+            this.createRoom(this.roomId);
+          }
+        }, 2000);
       }
     });
 
     this.startBroadcastLoop();
   }
 
-  // 2. 학생 모드: 방 접속 (클라이언트)
+  // 2. 학생 모드: 고정 방 접속 (클라이언트)
   joinRoom(roomId) {
     this.isHost = false;
-    this.roomId = roomId.toUpperCase();
-    const peerId = `metaverse-sinai-${this.roomId.toLowerCase()}`;
+    if (this.peer) {
+      try { this.peer.destroy(); } catch (e) {}
+      this.peer = null;
+    }
+
+    const targetRoom = (roomId || localStorage.getItem('sinai_last_joined_room') || 'SINAI-777').trim().toUpperCase();
+    this.roomId = targetRoom;
+    localStorage.setItem('sinai_last_joined_room', this.roomId);
+
+    const hostPeerId = this.toSafePeerId(this.roomId);
 
     // 학생은 랜덤 ID로 피어 생성
     this.peer = new window.Peer({
@@ -65,12 +96,12 @@ export class NetworkManager {
 
     this.peer.on('open', (myId) => {
       console.log('[네트워크] 학생 클라이언트 피어 준비됨:', myId);
-      this.hostConnection = this.peer.connect(peerId, {
+      this.hostConnection = this.peer.connect(hostPeerId, {
         reliable: true
       });
 
       this.hostConnection.on('open', () => {
-        console.log('[네트워크] 교사 호스트에 연결 성공!');
+        console.log('[네트워크] 교사 호스트에 연결 성공! 방:', this.roomId);
       });
 
       this.hostConnection.on('data', (data) => {
@@ -80,6 +111,10 @@ export class NetworkManager {
       this.hostConnection.on('close', () => {
         console.warn('[네트워크] 교사 호스트와의 연결이 끊어졌습니다.');
       });
+    });
+
+    this.peer.on('error', (err) => {
+      console.warn('[네트워크] 학생 Peer 에러:', err);
     });
 
     this.startClientSendLoop();
