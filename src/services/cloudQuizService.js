@@ -6,8 +6,8 @@ const CLOUD_STORAGE_KEY = 'sinai_cloud_quiz_list_v1';
 const TEACHER_CODE_KEY = 'sinai_teacher_auth_code_v1';
 const FIREBASE_CONFIG_KEY = 'sinai_custom_firebase_cfg_v1';
 
-// 기본 교사 접속 마스터 코드 (초기값: sinai777)
-const DEFAULT_TEACHER_CODE = 'sinai777';
+// 기본 교사 접속 마스터 코드 (사용자가 직접 첫 설정 전까지는 미설정 상태)
+const DEFAULT_TEACHER_CODE = '';
 
 export class CloudQuizService {
   constructor() {
@@ -16,13 +16,19 @@ export class CloudQuizService {
     this.firestoreInitialized = false;
   }
 
+  // 교사 코드가 설정되어 있는지 확인
+  isCodeConfigured() {
+    return !!(this.teacherCode && this.teacherCode.trim().length >= 4);
+  }
+
   // 교사 비밀번호 인증 검사
   verifyTeacherCode(inputCode) {
+    if (!this.isCodeConfigured()) return false;
     if (!inputCode) return false;
     return inputCode.trim() === this.teacherCode.trim();
   }
 
-  // 교사 비밀번호 변경
+  // 교사 비밀번호 설정/변경
   setTeacherCode(newCode) {
     if (!newCode || newCode.trim().length < 4) {
       throw new Error('교사 접속 코드는 4자리 이상이어야 합니다.');

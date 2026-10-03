@@ -28,6 +28,13 @@ export class InputController {
 
   initKeyboard() {
     window.addEventListener('keydown', (e) => {
+      // 텍스트 입력란(input, textarea)을 작성 중일 때는 게임 조작 및 스페이스바 가로채기를 완전 차단하여 정상 띄어쓰기 허용
+      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+      const isInputFocused = activeTag === 'input' || activeTag === 'textarea' || document.activeElement?.isContentEditable;
+      if (isInputFocused) {
+        return;
+      }
+
       // 방향키 스크롤 방지
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
         e.preventDefault();

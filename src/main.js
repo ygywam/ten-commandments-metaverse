@@ -591,8 +591,12 @@ canvas.addEventListener('wheel', (e) => {
   camera.handleWheel(e.deltaY);
 }, { passive: false });
 
-// 키보드 확대(+) / 축소(-) 지원
+// 키보드 확대(+) / 축소(-) 지원 (텍스트 입력 중 제외)
 window.addEventListener('keydown', (e) => {
+  const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+  if (activeTag === 'input' || activeTag === 'textarea' || document.activeElement?.isContentEditable) {
+    return;
+  }
   if (e.key === '+' || e.key === '=') {
     camera.zoomIn();
   } else if (e.key === '-' || e.key === '_') {

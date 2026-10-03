@@ -162,22 +162,40 @@ export class QuizEditorModal {
       if (e.target === this.modalEl) this.close();
     });
 
-    // ☁️ 0-1. 클라우드 퀴즈 목록 열기 (교사 인증 코드 검증)
+    // 🔒 교사 접속코드 인증 또는 최초 설정 헬퍼
+    const ensureTeacherAuth = () => {
+      if (!cloudQuizService.isCodeConfigured()) {
+        const setupCode = prompt('🔑 [교사 전용 접속코드 최초 설정]\n퀴즈를 안전하게 보호하기 위해 사용하실 비밀번호(4자리 이상)를 직접 입력해주세요:');
+        if (!setupCode) return false;
+        try {
+          cloudQuizService.setTeacherCode(setupCode);
+          sound.playItemGet();
+          alert(`✅ 교사 전용 접속코드가 등록되었습니다!\n앞으로 클라우드 퀴즈 메뉴 이용 시 이 코드를 입력해주세요.`);
+          return true;
+        } catch (err) {
+          alert(err.message);
+          return false;
+        }
+      }
+
+      const inputCode = prompt('🔑 선생님 전용 접속코드를 입력하세요:');
+      if (inputCode === null) return false;
+      if (!cloudQuizService.verifyTeacherCode(inputCode)) {
+        sound.playWrong();
+        alert('❌ 교사 접속코드가 올바르지 않습니다.');
+        return false;
+      }
+      return true;
+    };
+
+    // ☁️ 0-1. 클라우드 퀴즈 목록 열기
     const btnCloudList = this.modalEl.querySelector('#btn-cloud-list');
     const cloudPanel = this.modalEl.querySelector('#cloud-quiz-panel');
     const btnCloseCloudPanel = this.modalEl.querySelector('#btn-close-cloud-panel');
 
     if (btnCloudList && cloudPanel) {
       btnCloudList.addEventListener('click', async () => {
-        // 교사 전용 인증 코드 확인
-        const teacherCode = prompt('🔑 교사 전용 접속코드를 입력하세요 (초기 비밀번호: sinai777):');
-        if (teacherCode === null) return;
-
-        if (!cloudQuizService.verifyTeacherCode(teacherCode)) {
-          sound.playWrong();
-          alert('❌ 교사 접속코드가 올바르지 않습니다.');
-          return;
-        }
+        if (!ensureTeacherAuth()) return;
 
         sound.playSelect();
         cloudPanel.classList.remove('hidden');
@@ -195,14 +213,7 @@ export class QuizEditorModal {
     const btnCloudSave = this.modalEl.querySelector('#btn-cloud-save');
     if (btnCloudSave) {
       btnCloudSave.addEventListener('click', async () => {
-        const teacherCode = prompt('🔑 교사 전용 접속코드를 입력하세요 (초기 비밀번호: sinai777):');
-        if (teacherCode === null) return;
-
-        if (!cloudQuizService.verifyTeacherCode(teacherCode)) {
-          sound.playWrong();
-          alert('❌ 교사 접속코드가 올바르지 않습니다.');
-          return;
-        }
+        if (!ensureTeacherAuth()) return;
 
         const title = prompt('클라우드에 저장할 퀴즈 세트 이름을 입력하세요:', `주일학교 십계명_${new Date().toLocaleDateString()}`);
         if (!title) return;
@@ -223,6 +234,11 @@ export class QuizEditorModal {
     const btnAuthConfig = this.modalEl.querySelector('#btn-auth-code-config');
     if (btnAuthConfig) {
       btnAuthConfig.addEventListener('click', () => {
+        if (!cloudQuizService.isCodeConfigured()) {
+          ensureTeacherAuth();
+          return;
+        }
+
         const currentCode = prompt('현재 사용 중인 교사 접속코드를 입력하세요:');
         if (currentCode === null) return;
 
@@ -232,13 +248,13 @@ export class QuizEditorModal {
           return;
         }
 
-        const newCode = prompt('새로 지정할 교사 접속코드를 입력하세요 (4자리 이상):');
+        const newCode = prompt('새로 변경할 교사 접속코드를 입력하세요 (4자리 이상):');
         if (!newCode) return;
 
         try {
           cloudQuizService.setTeacherCode(newCode);
           sound.playItemGet();
-          alert(`🔑 교사 접속코드가 [${newCode}]로 안전하게 변경되었습니다!`);
+          alert(`🔑 교사 접속코드가 안전하게 변경되었습니다!`);
         } catch (err) {
           alert(err.message);
         }
