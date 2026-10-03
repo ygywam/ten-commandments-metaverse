@@ -2,7 +2,7 @@ import { sound } from './engine/soundEngine.js';
 import { Camera } from './engine/camera.js';
 import { World } from './engine/world.js';
 import { InputController } from './controls/inputController.js';
-import { AvatarCustomizer } from './components/avatarCustomizer.js';
+import { AvatarCustomizer, AVATAR_CHARACTERS, ACCESSORIES, EQUIPMENTS } from './components/avatarCustomizer.js';
 import { NetworkManager } from './network/networkManager.js';
 import { getCommandments, saveCommandments } from './data/commandmentsData.js';
 import { QuizModal } from './components/quizModal.js';
@@ -13,6 +13,9 @@ import { LeaderboardWidget } from './components/leaderboardWidget.js';
 // DOM 요소 참조
 const soundToggleBtn = document.getElementById('btn-sound-toggle');
 const soundIcon = document.getElementById('sound-icon');
+const fullscreenBtn = document.getElementById('btn-fullscreen');
+const fullscreenIcon = document.getElementById('fullscreen-icon');
+const fullscreenText = document.getElementById('fullscreen-text');
 const viewToggleBtn = document.getElementById('btn-view-toggle');
 const viewIcon = document.getElementById('view-icon');
 const viewText = document.getElementById('view-text');
@@ -508,7 +511,7 @@ if (roomParam || isMobileClient) {
   if (floatingQrWidget) floatingQrWidget.classList.add('hidden');
 }
 
-// 로컬 플레이어 아바타 상태
+// 로컬 플레이어 아바타 상태 (기본 커스텀 즉시 보장)
 const player = {
   x: 2110,      // 모세 앞마당(성막 앞)에서 시작
   y: 1100,
@@ -517,7 +520,11 @@ const player = {
   isMoving: false,
   walkCycle: 0,
   facing: 'down',
-  custom: null
+  custom: {
+    character: AVATAR_CHARACTERS[0],
+    accessory: ACCESSORIES[0],
+    equipment: EQUIPMENTS[0]
+  }
 };
 
 // 캐릭터 생성 완료 여부 (캐릭터 생성을 마친 후에만 인게임 진입 및 가로모드 체크)
@@ -571,6 +578,37 @@ soundToggleBtn.addEventListener('click', () => {
   const isMuted = sound.toggleMute();
   soundIcon.textContent = isMuted ? '🔇' : '🔊';
 });
+
+// 전체화면 토글 기능 (모바일 브라우저 주소창 숨김 및 몰입도 극대화)
+function updateFullscreenBtn() {
+  const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  if (fullscreenIcon) fullscreenIcon.textContent = isFull ? '🗗' : '🖥️';
+  if (fullscreenText) fullscreenText.textContent = isFull ? '창모드' : '전체화면';
+}
+
+if (fullscreenBtn) {
+  fullscreenBtn.addEventListener('click', () => {
+    const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    if (!isFull) {
+      const elem = document.documentElement;
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(() => {});
+      } else if (elem.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
+    }
+    sound.playSelect();
+  });
+}
+
+document.addEventListener('fullscreenchange', updateFullscreenBtn);
+document.addEventListener('webkitfullscreenchange', updateFullscreenBtn);
 
 // 카메라 뷰 모드 토글 (교사 전체 뷰 vs 학생 캐릭터 뷰)
 if (viewToggleBtn) {

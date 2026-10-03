@@ -37,9 +37,9 @@ export class Camera {
   }
 
   getDefaultFollowZoom() {
-    // 모바일 가로 화면(폭 950px 미만 또는 높이 550px 미만)에서는 광야 맵이 너무 확대되지 않도록 시원하게 전체 배경이 보이도록 설정
+    // 모바일 가로 화면(폭 950px 미만 또는 높이 550px 미만)에서는 광야 맵이 너무 확대되지 않고 시원하게 넓은 지형이 보이도록 0.30 배율 설정
     const isMobileSize = this.viewportWidth < 950 || this.viewportHeight < 550;
-    const baseFollowZoom = isMobileSize ? 0.48 : 0.85;
+    const baseFollowZoom = isMobileSize ? 0.30 : 0.85;
     return Math.max(this.minZoom, baseFollowZoom);
   }
 

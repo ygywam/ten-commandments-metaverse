@@ -61,6 +61,11 @@ export class QuizModal {
     this.feedbackEl.innerHTML = '';
     this.actionBtn.classList.add('hidden');
 
+    const quizBody = this.modalEl?.querySelector('.quiz-body');
+    if (quizBody) {
+      quizBody.scrollTop = 0;
+    }
+
     this.optionsContainer.innerHTML = '';
 
     const isOx = quizData.type === 'ox';

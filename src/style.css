@@ -755,24 +755,29 @@ html, body {
 /* 십계명 성경 퀴즈 모달 */
 .quiz-card {
   background: #ffffff;
-  width: 90%;
-  max-width: 520px;
+  width: 92%;
+  max-width: 500px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
   border-radius: 24px;
-  padding: 24px;
+  padding: 20px 24px;
   box-shadow: 0 16px 40px rgba(120, 80, 40, 0.28);
   border: 2.5px solid var(--border-color);
   animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-sizing: border-box;
 }
 
 .quiz-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
 }
 
 .quiz-header h2 {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   color: #78350f;
 }
@@ -780,36 +785,45 @@ html, body {
 .quiz-verse-box {
   background: #fffdf5;
   border-left: 4px solid var(--accent-gold);
-  padding: 8px 14px;
-  border-radius: 0 10px 10px 0;
-  margin-bottom: 16px;
-  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 10px;
+  font-size: 12px;
   color: #92400e;
   font-weight: 600;
+  flex-shrink: 0;
+}
+
+.quiz-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
+  min-height: 0;
 }
 
 .quiz-question {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: #1f2937;
-  margin-bottom: 16px;
-  line-height: 1.45;
+  margin-bottom: 12px;
+  line-height: 1.4;
 }
 
 .quiz-options-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .quiz-opt-btn {
   background: #ffffff;
   border: 1.5px solid var(--border-color);
-  padding: 12px 14px;
-  border-radius: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
   text-align: left;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
   color: #374151;
   cursor: pointer;
@@ -827,8 +841,8 @@ html, body {
 
 .quiz-opt-btn .opt-num {
   background: #f3f4f6;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   display: flex;
   justify-content: center;
@@ -836,6 +850,7 @@ html, body {
   font-size: 12px;
   font-weight: 800;
   color: #4b5563;
+  flex-shrink: 0;
 }
 
 .quiz-opt-btn.correct {
@@ -937,7 +952,71 @@ html, body {
 }
 
 .quiz-footer {
-  margin-top: 12px;
+  margin-top: 10px;
+  flex-shrink: 0;
+}
+
+/* --- 모바일 가로 모드 (높이 520px 이하) 퀴즈 모달 최적화 --- */
+@media (max-height: 520px) {
+  .quiz-card {
+    max-height: 94vh;
+    padding: 10px 16px;
+    border-radius: 18px;
+    max-width: 480px;
+  }
+  .quiz-header {
+    margin-bottom: 4px;
+  }
+  .quiz-header h2 {
+    font-size: 15px;
+  }
+  .quiz-verse-box {
+    padding: 4px 10px;
+    margin-bottom: 6px;
+    font-size: 11px;
+  }
+  .quiz-question {
+    font-size: 13px;
+    margin-bottom: 8px;
+    line-height: 1.35;
+  }
+  .quiz-options-list {
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .quiz-opt-btn {
+    padding: 7px 10px;
+    font-size: 12px;
+    border-radius: 10px;
+    gap: 8px;
+  }
+  .quiz-opt-btn .opt-num {
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+  }
+  .ox-opt-btn {
+    padding: 8px 6px;
+  }
+  .ox-opt-btn .ox-symbol {
+    font-size: 26px;
+  }
+  .ox-opt-btn .ox-label {
+    font-size: 12px;
+  }
+  .quiz-feedback {
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-top: 6px;
+  }
+  .quiz-footer {
+    margin-top: 6px;
+  }
+  .quiz-footer .primary-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 12px;
+  }
 }
 
 /* --- 상단 계명 돌판 현황 배지 --- */
