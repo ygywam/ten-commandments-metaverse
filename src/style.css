@@ -48,41 +48,52 @@ html, body {
 /* 상단 네비게이션 */
 .top-nav {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  right: 12px;
+  top: 10px;
+  left: 10px;
+  right: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   z-index: 50;
   pointer-events: none;
+  gap: 8px;
 }
 
 .game-title-tag {
-  background: rgba(255, 255, 255, 0.92);
-  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 6px 14px;
   border-radius: 20px;
-  font-weight: 700;
-  font-size: 15px;
+  font-weight: 800;
+  font-size: 14px;
   box-shadow: var(--shadow);
   border: 1px solid var(--border-color);
   pointer-events: auto;
+  white-space: nowrap !important;
+  flex-shrink: 0;
 }
 
 .top-buttons {
   pointer-events: auto;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+.top-buttons::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-btn {
   background: #ffffff;
   border: 1px solid var(--border-color);
-  padding: 7px 12px;
+  padding: 6px 11px;
   border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12.5px;
+  font-weight: 700;
   cursor: pointer;
   box-shadow: var(--shadow);
   transition: all 0.2s ease;
@@ -90,11 +101,51 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  flex-shrink: 0;
 }
 
 .nav-btn:hover {
   background: #fff8e8;
   transform: translateY(-1px);
+}
+
+/* 모바일 학생 환경에서 불필요한 교사 컨트롤 버튼 숨김 및 컴팩트 스타일 */
+@media (max-width: 900px), (max-height: 520px) {
+  .top-nav {
+    top: 6px;
+    left: 8px;
+    right: 8px;
+    gap: 4px;
+  }
+  .game-title-tag {
+    font-size: 12px;
+    padding: 5px 10px;
+  }
+  .nav-btn {
+    padding: 5px 8px;
+    font-size: 11px;
+    gap: 3px;
+  }
+  .tablet-hud-badge {
+    padding: 4px 9px;
+    font-size: 11px;
+  }
+  .status-badge {
+    padding: 4px 8px;
+    font-size: 10.5px;
+  }
+  /* 모바일(학생) 화면에서는 교사용 게임 제어 버튼, 퀴즈 편집기, 모드 전환 버튼, 전체 뷰 토글 강제 숨김 */
+  body.mobile-mode #btn-game-control,
+  body.mobile-mode #btn-quiz-editor,
+  body.mobile-mode #btn-game-mode,
+  body.mobile-mode #btn-room-modal,
+  body.mobile-mode #btn-view-toggle,
+  body.mobile-mode .floating-qr-box,
+  body.mobile-mode .leaderboard-box {
+    display: none !important;
+  }
 }
 
 /* 모바일 가상 조작기 */

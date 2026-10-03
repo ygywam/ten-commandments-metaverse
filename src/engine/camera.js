@@ -1,14 +1,14 @@
 // 2D 카메라 시스템 (마우스 휠 줌 & 캐릭터 관찰 타겟팅 지원)
 
 export class Camera {
-  constructor(viewportWidth, viewportHeight, worldWidth, worldHeight) {
+  constructor(viewportWidth, viewportHeight, worldWidth, worldHeight, initialX, initialY) {
     this.viewportWidth = viewportWidth;
     this.viewportHeight = viewportHeight;
     this.worldWidth = worldWidth;
     this.worldHeight = worldHeight;
 
-    this.x = worldWidth / 2;
-    this.y = worldHeight / 2;
+    this.x = initialX !== undefined ? initialX : worldWidth / 2;
+    this.y = initialY !== undefined ? initialY : worldHeight / 2;
     this.updateMinZoom();
     this.maxZoom = 2.5;
     this.lerpSpeed = 0.12;
@@ -37,9 +37,9 @@ export class Camera {
   }
 
   getDefaultFollowZoom() {
-    // 모바일 가로 화면(폭 950px 미만 또는 높이 550px 미만)에서는 광야 맵이 너무 확대되지 않고 시원하게 넓은 지형이 보이도록 0.30 배율 설정
+    // 사용자가 요청한 1배율(1.0x) 기본 적용: 캐릭터가 화면 중앙에 또렷하고 시원하게 100% 보이도록 보장
     const isMobileSize = this.viewportWidth < 950 || this.viewportHeight < 550;
-    const baseFollowZoom = isMobileSize ? 0.30 : 0.85;
+    const baseFollowZoom = isMobileSize ? 1.0 : 0.85;
     return Math.max(this.minZoom, baseFollowZoom);
   }
 

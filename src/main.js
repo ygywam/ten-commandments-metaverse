@@ -187,9 +187,25 @@ const quizModal = new QuizModal((commandmentId) => {
   }
 });
 
-// 게임 시스템 인스턴스
+// 로컬 플레이어 아바타 상태 (기본 커스텀 즉시 보장)
+const player = {
+  x: 2110,      // 모세 앞마당(성막 앞)에서 시작
+  y: 1100,
+  speed: 4.8,
+  nickname: '믿음이',
+  isMoving: false,
+  walkCycle: 0,
+  facing: 'down',
+  custom: {
+    character: AVATAR_CHARACTERS[0],
+    accessory: ACCESSORIES[0],
+    equipment: EQUIPMENTS[0]
+  }
+};
+
+// 게임 시스템 인스턴스 (초기 카메라 위치를 플레이어 스폰 좌표 2110, 1100으로 즉각 일치)
 const world = new World();
-const camera = new Camera(window.innerWidth, window.innerHeight, world.width, world.height);
+const camera = new Camera(window.innerWidth, window.innerHeight, world.width, world.height, player.x, player.y);
 const input = new InputController();
 
 // 원격 접속 플레이어 맵 (ID -> 플레이어 객체)
@@ -233,6 +249,11 @@ const isMobileClient = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAge
 // 교사 / 학생 모드 판별: 명시적 교사 뷰(?view=teacher)이거나 PC 환경에서 파라미터 없이 열었을 때 교사 모드
 const isExplicitTeacher = urlParams.get('view') === 'teacher';
 const isTeacher = isExplicitTeacher || (!roomParam && !isMobileClient);
+
+// 모바일 또는 학생 클라이언트인 경우 상단 버튼 줄바꿈 방지 및 교사용 버튼 정돈을 위해 mobile-mode 클래스 주입
+if (!isTeacher || isMobileClient) {
+  document.body.classList.add('mobile-mode');
+}
 
 // 방 번호 표시 및 제어 요소
 const roomBadgeBtn = document.getElementById('btn-room-badge');
@@ -567,22 +588,6 @@ if (roomParam || isMobileClient) {
   if (roomModalBtn) roomModalBtn.classList.add('hidden');
   if (floatingQrWidget) floatingQrWidget.classList.add('hidden');
 }
-
-// 로컬 플레이어 아바타 상태 (기본 커스텀 즉시 보장)
-const player = {
-  x: 2110,      // 모세 앞마당(성막 앞)에서 시작
-  y: 1100,
-  speed: 4.8,
-  nickname: '믿음이',
-  isMoving: false,
-  walkCycle: 0,
-  facing: 'down',
-  custom: {
-    character: AVATAR_CHARACTERS[0],
-    accessory: ACCESSORIES[0],
-    equipment: EQUIPMENTS[0]
-  }
-};
 
 // 캐릭터 생성 완료 여부 (캐릭터 생성을 마친 후에만 인게임 진입 및 가로모드 체크)
 let isAvatarCustomized = false;
