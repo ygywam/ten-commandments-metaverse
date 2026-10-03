@@ -534,6 +534,41 @@ html, body {
   background: #e0f2fe;
 }
 
+.nav-btn.highlight-green {
+  background: #ecfdf5;
+  border-color: #34d399;
+  color: #065f46;
+  font-weight: 800;
+}
+
+.nav-btn.highlight-green:hover {
+  background: #d1fae5;
+}
+
+/* 게임 진행 상태 배지 (대기 중 vs 진행 중) */
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.status-badge.waiting {
+  background: #fef3c7;
+  border: 1.5px solid #f59e0b;
+  color: #b45309;
+}
+
+.status-badge.playing {
+  background: #ecfdf5;
+  border: 1.5px solid #10b981;
+  color: #065f46;
+}
+
 /* 교사용 우측 상단 플로팅 QR코드 위젯 */
 .floating-qr-box {
   position: absolute;
@@ -1300,6 +1335,151 @@ html, body {
   font-size: 13px;
   color: #64748b;
   margin: 0;
+}
+
+/* 집 ↔ 교회 간 퀴즈 백업 & 코드 공유 툴바 */
+.editor-share-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.share-btn-group {
+  display: flex;
+  gap: 6px;
+}
+
+.small-share-btn {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.small-share-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.small-share-btn.highlight-gold {
+  background: #fefce8;
+  border-color: #fde047;
+  color: #854d0e;
+}
+
+.small-share-btn.highlight-gold:hover {
+  background: #fef9c3;
+  border-color: #facc15;
+}
+
+.small-share-btn.highlight-blue {
+  background: #f0f9ff;
+  border-color: #38bdf8;
+  color: #0369a1;
+}
+
+.small-share-btn.highlight-blue:hover {
+  background: #e0f2fe;
+}
+
+.small-share-btn.highlight-green {
+  background: #ecfdf5;
+  border-color: #34d399;
+  color: #065f46;
+}
+
+.small-share-btn.highlight-green:hover {
+  background: #d1fae5;
+}
+
+/* 클라우드 퀴즈 팝오버 패널 */
+.cloud-quiz-panel {
+  background: #ffffff;
+  border: 2px solid #38bdf8;
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.15);
+}
+
+.cloud-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e0f2fe;
+}
+
+.cloud-panel-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0284c7;
+}
+
+.close-btn-sub {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.cloud-quiz-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.cloud-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.cloud-item-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.cloud-item-sub {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.cloud-item-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.loading-text, .empty-text {
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
+  padding: 10px 0;
 }
 
 /* 1~10계명 탭 바 */

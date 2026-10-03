@@ -164,3 +164,50 @@ export function resetCommandments() {
   }
   return JSON.parse(JSON.stringify(COMMANDMENTS_DATA));
 }
+
+// 퀴즈 데이터를 한 줄 공유 코드(Base64)로 변환
+export function encodeQuizToCode(quizData) {
+  try {
+    const jsonStr = JSON.stringify(quizData);
+    return 'SINAI_QUIZ_' + btoa(encodeURIComponent(jsonStr));
+  } catch (e) {
+    console.error('코드 인코딩 실패:', e);
+    return null;
+  }
+}
+
+// 한 줄 공유 코드(Base64)를 퀴즈 데이터로 복원
+export function decodeQuizFromCode(codeStr) {
+  try {
+    let clean = codeStr.trim();
+    if (clean.startsWith('SINAI_QUIZ_')) {
+      clean = clean.substring(11);
+    }
+    const jsonStr = decodeURIComponent(atob(clean));
+    const parsed = JSON.parse(jsonStr);
+    if (Array.isArray(parsed) && parsed.length === 10) {
+      return parsed;
+    }
+  } catch (e) {
+    console.error('코드 디코딩 실패:', e);
+  }
+  return null;
+}
+
+// 퀴즈 JSON 파일 다운로드 트리거
+export function downloadQuizJson(quizData, filename = '십계명_퀴즈_세트.json') {
+  try {
+    const jsonStr = JSON.stringify(quizData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    return true;
+  } catch (e) {
+    console.error('파일 다운로드 실패:', e);
+    return false;
+  }
+}

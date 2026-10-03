@@ -1,7 +1,15 @@
 // 교사용 10개 계명 퀴즈 편집기 모달 컴포넌트
-// OX 퀴즈 및 가변형 객관식(기본 2지선다 ~ 최대 4지선다, 보기 추가/삭제) 지원
-import { getCommandments, saveCommandments, resetCommandments } from '../data/commandmentsData.js';
+// OX 퀴즈, 가변형 객관식(2~4지선다), 코드 복사/붙여넣기, JSON 파일 내보내기/불러오기 지원
+import {
+  getCommandments,
+  saveCommandments,
+  resetCommandments,
+  encodeQuizToCode,
+  decodeQuizFromCode,
+  downloadQuizJson
+} from '../data/commandmentsData.js';
 import { sound } from '../engine/soundEngine.js';
+import { cloudQuizService } from '../services/cloudQuizService.js';
 
 export class QuizEditorModal {
   constructor(onSaveCallback) {
@@ -24,10 +32,51 @@ export class QuizEditorModal {
             <span class="editor-icon">✏️</span>
             <div>
               <h2>선생님용 십계명 퀴즈 편집기</h2>
-              <p class="editor-sub">OX 퀴즈 또는 2~4지선다형 객관식 문제를 자유롭게 구성하세요.</p>
+              <p class="editor-sub">OX 퀴즈 또는 2~4지선다형 문제를 구성하고, 집 ↔ 교회 간 파일/코드로 자유롭게 공유하세요.</p>
             </div>
           </div>
           <button id="btn-close-editor" class="close-btn" aria-label="닫기">✕</button>
+        </div>
+
+        <!-- 집 ↔ 교회 간 퀴즈 백업 & 클라우드 연동 툴바 -->
+        <div class="editor-share-bar">
+          <div class="share-btn-group">
+            <button type="button" id="btn-cloud-list" class="small-share-btn highlight-blue" title="교사 전용 접속코드로 클라우드 퀴즈 목록 불러오기">
+              ☁️ 클라우드 퀴즈 목록
+            </button>
+            <button type="button" id="btn-cloud-save" class="small-share-btn highlight-green" title="현재 퀴즈를 클라우드에 새 세트로 저장">
+              💾 클라우드에 저장
+            </button>
+            <button type="button" id="btn-auth-code-config" class="small-share-btn" title="교사 전용 접속코드(비밀번호) 확인 및 변경">
+              🔑 교사 접속코드 관리
+            </button>
+          </div>
+          <div class="share-btn-group">
+            <button type="button" id="btn-copy-quiz-code" class="small-share-btn highlight-gold" title="카톡/메모장으로 전송할 한 줄 텍스트 복사">
+              📋 퀴즈 코드 복사
+            </button>
+            <button type="button" id="btn-paste-quiz-code" class="small-share-btn" title="복사한 퀴즈 코드로 즉시 교체">
+              📥 퀴즈 코드 붙여넣기
+            </button>
+            <button type="button" id="btn-export-quiz-json" class="small-share-btn" title="JSON 파일로 다운로드">
+              📤 JSON 파일 내보내기
+            </button>
+            <button type="button" id="btn-import-quiz-json" class="small-share-btn" title="JSON 파일 불러오기">
+              📥 JSON 열기
+            </button>
+            <input type="file" id="file-quiz-import" accept=".json" style="display: none;">
+          </div>
+        </div>
+
+        <!-- 클라우드 퀴즈 목록 팝오버/서브패널 -->
+        <div id="cloud-quiz-panel" class="cloud-quiz-panel hidden">
+          <div class="cloud-panel-header">
+            <div class="cloud-panel-title">☁️ 클라우드 저장 퀴즈 세트 목록</div>
+            <button type="button" id="btn-close-cloud-panel" class="close-btn-sub">✕</button>
+          </div>
+          <div id="cloud-quiz-items-list" class="cloud-quiz-items-list">
+            <p class="loading-text">클라우드 퀴즈 목록을 불러오는 중...</p>
+          </div>
         </div>
 
         <!-- 1~10계명 선택 탭 -->
@@ -112,6 +161,182 @@ export class QuizEditorModal {
     this.modalEl.addEventListener('click', (e) => {
       if (e.target === this.modalEl) this.close();
     });
+
+    // ☁️ 0-1. 클라우드 퀴즈 목록 열기 (교사 인증 코드 검증)
+    const btnCloudList = this.modalEl.querySelector('#btn-cloud-list');
+    const cloudPanel = this.modalEl.querySelector('#cloud-quiz-panel');
+    const btnCloseCloudPanel = this.modalEl.querySelector('#btn-close-cloud-panel');
+
+    if (btnCloudList && cloudPanel) {
+      btnCloudList.addEventListener('click', async () => {
+        // 교사 전용 인증 코드 확인
+        const teacherCode = prompt('🔑 교사 전용 접속코드를 입력하세요 (초기 비밀번호: sinai777):');
+        if (teacherCode === null) return;
+
+        if (!cloudQuizService.verifyTeacherCode(teacherCode)) {
+          sound.playWrong();
+          alert('❌ 교사 접속코드가 올바르지 않습니다.');
+          return;
+        }
+
+        sound.playSelect();
+        cloudPanel.classList.remove('hidden');
+        await this.renderCloudQuizList();
+      });
+
+      if (btnCloseCloudPanel) {
+        btnCloseCloudPanel.addEventListener('click', () => {
+          cloudPanel.classList.add('hidden');
+        });
+      }
+    }
+
+    // 💾 0-2. 현재 퀴즈를 클라우드에 새 세트로 저장
+    const btnCloudSave = this.modalEl.querySelector('#btn-cloud-save');
+    if (btnCloudSave) {
+      btnCloudSave.addEventListener('click', async () => {
+        const teacherCode = prompt('🔑 교사 전용 접속코드를 입력하세요 (초기 비밀번호: sinai777):');
+        if (teacherCode === null) return;
+
+        if (!cloudQuizService.verifyTeacherCode(teacherCode)) {
+          sound.playWrong();
+          alert('❌ 교사 접속코드가 올바르지 않습니다.');
+          return;
+        }
+
+        const title = prompt('클라우드에 저장할 퀴즈 세트 이름을 입력하세요:', `주일학교 십계명_${new Date().toLocaleDateString()}`);
+        if (!title) return;
+
+        this.saveCurrentFormToMemory();
+        const res = await cloudQuizService.saveQuiz(title, '선생님 작성 퀴즈 세트', this.data);
+        if (res.success) {
+          sound.playItemGet();
+          alert(`☁️ [${title}] 퀴즈 세트가 클라우드에 안전하게 저장되었습니다!\n교회 PC에서도 교사 코드로 언제든 즉시 불러오실 수 있습니다.`);
+          if (cloudPanel && !cloudPanel.classList.contains('hidden')) {
+            await this.renderCloudQuizList();
+          }
+        }
+      });
+    }
+
+    // 🔑 0-3. 교사 접속코드 관리 (비밀번호 변경)
+    const btnAuthConfig = this.modalEl.querySelector('#btn-auth-code-config');
+    if (btnAuthConfig) {
+      btnAuthConfig.addEventListener('click', () => {
+        const currentCode = prompt('현재 사용 중인 교사 접속코드를 입력하세요:');
+        if (currentCode === null) return;
+
+        if (!cloudQuizService.verifyTeacherCode(currentCode)) {
+          sound.playWrong();
+          alert('❌ 현재 접속코드가 일치하지 않습니다.');
+          return;
+        }
+
+        const newCode = prompt('새로 지정할 교사 접속코드를 입력하세요 (4자리 이상):');
+        if (!newCode) return;
+
+        try {
+          cloudQuizService.setTeacherCode(newCode);
+          sound.playItemGet();
+          alert(`🔑 교사 접속코드가 [${newCode}]로 안전하게 변경되었습니다!`);
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    }
+
+    // 1. 📋 퀴즈 코드 복사
+    const copyCodeBtn = this.modalEl.querySelector('#btn-copy-quiz-code');
+    if (copyCodeBtn) {
+      copyCodeBtn.addEventListener('click', () => {
+        this.saveCurrentFormToMemory();
+        const code = encodeQuizToCode(this.data);
+        if (code) {
+          navigator.clipboard.writeText(code).then(() => {
+            sound.playItemGet();
+            alert('📋 [퀴즈 설정 코드]가 클립보드에 복사되었습니다!\n\n카카오톡 나에게 보내기나 메모장에 붙여넣어 두셨다가, 교회 PC에서 [📥 퀴즈 코드 붙여넣기]를 하시면 그대로 열립니다.');
+          });
+        }
+      });
+    }
+
+    // 2. 📥 퀴즈 코드 붙여넣기 (불러오기)
+    const pasteCodeBtn = this.modalEl.querySelector('#btn-paste-quiz-code');
+    if (pasteCodeBtn) {
+      pasteCodeBtn.addEventListener('click', () => {
+        const inputCode = prompt('집이나 카톡에서 복사한 [퀴즈 설정 코드]를 여기에 붙여넣어주세요 (SINAI_QUIZ_...):');
+        if (!inputCode) return;
+        const decoded = decodeQuizFromCode(inputCode);
+        if (decoded && Array.isArray(decoded) && decoded.length === 10) {
+          this.data = decoded;
+          saveCommandments(this.data);
+          this.currentIdx = 0;
+          this.renderTabs();
+          this.loadFormFromMemory();
+          sound.playItemGet();
+          alert('🎉 퀴즈 코드가 성공적으로 로드되었습니다! 10개 문항이 교체되었습니다.');
+          if (this.onSaveCallback) {
+            this.onSaveCallback(this.data);
+          }
+        } else {
+          sound.playWrong();
+          alert('올바르지 않은 퀴즈 코드입니다. 코드를 다시 확인해주세요.');
+        }
+      });
+    }
+
+    // 3. 📤 JSON 파일 내보내기
+    const exportJsonBtn = this.modalEl.querySelector('#btn-export-quiz-json');
+    if (exportJsonBtn) {
+      exportJsonBtn.addEventListener('click', () => {
+        this.saveCurrentFormToMemory();
+        const success = downloadQuizJson(this.data, `십계명_퀴즈_세트_${Date.now()}.json`);
+        if (success) {
+          sound.playItemGet();
+          alert('📤 십계명 퀴즈 JSON 파일이 다운로드되었습니다! 이 파일을 메일이나 USB로 보관하세요.');
+        }
+      });
+    }
+
+    // 4. 📥 JSON 파일 열기
+    const importJsonBtn = this.modalEl.querySelector('#btn-import-quiz-json');
+    const fileInput = this.modalEl.querySelector('#file-quiz-import');
+    if (importJsonBtn && fileInput) {
+      importJsonBtn.addEventListener('click', () => {
+        fileInput.click();
+      });
+
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const parsed = JSON.parse(ev.target.result);
+            if (Array.isArray(parsed) && parsed.length === 10) {
+              this.data = parsed;
+              saveCommandments(this.data);
+              this.currentIdx = 0;
+              this.renderTabs();
+              this.loadFormFromMemory();
+              sound.playItemGet();
+              alert('🎉 JSON 파일에서 10개 퀴즈 문항을 성공적으로 불러왔습니다!');
+              if (this.onSaveCallback) {
+                this.onSaveCallback(this.data);
+              }
+            } else {
+              throw new Error('문항 수 불일치');
+            }
+          } catch (err) {
+            sound.playWrong();
+            alert('올바른 십계명 퀴즈 JSON 파일이 아닙니다.');
+          }
+          fileInput.value = '';
+        };
+        reader.readAsText(file);
+      });
+    }
 
     // 문제 유형 변경 (OX vs 객관식)
     const btnTypeOx = this.modalEl.querySelector('#btn-type-ox');
@@ -367,6 +592,90 @@ export class QuizEditorModal {
     }
   }
 
+  // 클라우드 저장 퀴즈 세트 목록 렌더링
+  async renderCloudQuizList() {
+    const container = this.modalEl.querySelector('#cloud-quiz-items-list');
+    if (!container) return;
+
+    container.innerHTML = '<p class="loading-text">클라우드 퀴즈 목록을 불러오는 중...</p>';
+
+    try {
+      const list = await cloudQuizService.getQuizList();
+      if (!list || list.length === 0) {
+        container.innerHTML = '<p class="empty-text">저장된 클라우드 퀴즈가 없습니다. [💾 클라우드에 저장]을 눌러 현재 퀴즈를 저장해보세요!</p>';
+        return;
+      }
+
+      container.innerHTML = '';
+      list.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'cloud-item-row';
+        row.innerHTML = `
+          <div class="cloud-item-info">
+            <div class="cloud-item-title">${item.title}</div>
+            <div class="cloud-item-sub">${item.description || ''} • ${new Date(item.createdAt).toLocaleDateString()} (${item.itemCount || 10}문항)</div>
+          </div>
+          <div class="cloud-item-actions">
+            <button type="button" class="small-action-btn highlight btn-load-cloud" data-id="${item.id}">
+              📥 불러오기
+            </button>
+            ${item.id !== 'preset_standard' ? `<button type="button" class="small-action-btn btn-danger-soft btn-del-cloud" data-id="${item.id}" title="삭제">🗑️</button>` : ''}
+          </div>
+        `;
+
+        // 📥 불러오기 클릭
+        const loadBtn = row.querySelector('.btn-load-cloud');
+        loadBtn.addEventListener('click', async () => {
+          const loadedData = await cloudQuizService.getQuizById(item.id);
+          if (loadedData && Array.isArray(loadedData) && loadedData.length === 10) {
+            this.data = loadedData;
+            saveCommandments(this.data);
+            this.currentIdx = 0;
+            this.renderTabs();
+            this.loadFormFromMemory();
+            sound.playItemGet();
+            alert(`🎉 [${item.title}] 퀴즈 세트를 성공적으로 불러왔습니다!`);
+            if (this.onSaveCallback) {
+              this.onSaveCallback(this.data);
+            }
+            this.modalEl.querySelector('#cloud-quiz-panel').classList.add('hidden');
+          } else if (item.id === 'preset_standard') {
+            this.data = resetCommandments();
+            this.currentIdx = 0;
+            this.renderTabs();
+            this.loadFormFromMemory();
+            sound.playItemGet();
+            alert(`🎉 [${item.title}] 기본 문항을 성공적으로 불러왔습니다!`);
+            if (this.onSaveCallback) {
+              this.onSaveCallback(this.data);
+            }
+            this.modalEl.querySelector('#cloud-quiz-panel').classList.add('hidden');
+          } else {
+            sound.playWrong();
+            alert('퀴즈 데이터를 불러오지 못했습니다.');
+          }
+        });
+
+        // 🗑️ 삭제 클릭
+        const delBtn = row.querySelector('.btn-del-cloud');
+        if (delBtn) {
+          delBtn.addEventListener('click', async () => {
+            if (confirm(`[${item.title}] 퀴즈 세트를 클라우드에서 삭제하시겠습니까?`)) {
+              await cloudQuizService.deleteQuiz(item.id);
+              sound.playSelect();
+              await this.renderCloudQuizList();
+            }
+          });
+        }
+
+        container.appendChild(row);
+      });
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = '<p class="empty-text">목록을 불러오는 중 오류가 발생했습니다.</p>';
+    }
+  }
+
   open() {
     this.isOpen = true;
     this.data = getCommandments();
@@ -379,6 +688,9 @@ export class QuizEditorModal {
   close() {
     this.isOpen = false;
     this.modalEl.classList.add('hidden');
+    const cloudPanel = this.modalEl.querySelector('#cloud-quiz-panel');
+    if (cloudPanel) cloudPanel.classList.add('hidden');
     sound.playSelect();
   }
 }
+

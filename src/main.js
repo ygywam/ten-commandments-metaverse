@@ -30,12 +30,21 @@ const qrcodeBox = document.getElementById('qrcode-box');
 const proximityHint = document.getElementById('proximity-hint');
 const tabletHudBtn = document.getElementById('btn-tablet-hud');
 const tabletHudText = document.getElementById('tablet-hud-text');
+const gameControlBtn = document.getElementById('btn-game-control');
+const controlIcon = document.getElementById('control-icon');
+const controlBtnText = document.getElementById('control-btn-text');
+const statusBadge = document.getElementById('badge-game-status');
+const statusIcon = document.getElementById('status-icon');
+const statusText = document.getElementById('status-text');
 const quizEditorBtn = document.getElementById('btn-quiz-editor');
 const gameModeBtn = document.getElementById('btn-game-mode');
 const modeIcon = document.getElementById('mode-icon');
 const modeText = document.getElementById('mode-text');
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
+
+// 게임 진행 상태 ('waiting': 대기 중(자유 이동만 가능, 퀴즈 잠김), 'playing': 진행 중(퀴즈 활성화))
+let gameStatus = 'waiting';
 
 // 게임 모드 ('coop': 우리 반 협동전, 'individual': 개인전 랭킹 레이스)
 let currentGameMode = 'coop';
@@ -55,6 +64,32 @@ let gameStartTime = Date.now();
 
 // 리더보드 & 진행도 위젯 초기화
 const leaderboard = new LeaderboardWidget();
+
+function updateGameStatusUi() {
+  if (statusBadge && statusIcon && statusText) {
+    if (gameStatus === 'waiting') {
+      statusBadge.className = 'status-badge waiting';
+      statusIcon.textContent = '⏳';
+      statusText.textContent = '대기 중';
+    } else {
+      statusBadge.className = 'status-badge playing';
+      statusIcon.textContent = '🔥';
+      statusText.textContent = '탐험 진행 중';
+    }
+  }
+
+  if (gameControlBtn && controlIcon && controlBtnText) {
+    if (gameStatus === 'waiting') {
+      controlIcon.textContent = '▶️';
+      controlBtnText.textContent = '게임 시작!';
+      gameControlBtn.className = 'nav-btn highlight-green pulse-glow';
+    } else {
+      controlIcon.textContent = '⏹️';
+      controlBtnText.textContent = '대기로 전환';
+      gameControlBtn.className = 'nav-btn';
+    }
+  }
+}
 
 // 퀴즈 편집기 인스턴스 초기화 (교사 전용)
 const quizEditorModal = new QuizEditorModal((updatedQuizData) => {
@@ -214,16 +249,38 @@ if (isTeacher) {
   }
   network.createRoom();
 
-  // 학생 참가 시 방의 최신 상태(모드, 랜덤 비석 좌표, 퀴즈, 협동 상태) 전송
+  // 학생 참가 시 방의 최신 상태(진행 상태, 모드, 랜덤 비석 좌표, 퀴즈, 협동 상태) 전송 (중간 입장자 완벽 지원)
   network.onStudentJoin = (conn) => {
     conn.send({
       type: 'init_room_state',
+      gameStatus,
       mode: currentGameMode,
       spots: world.commandmentSpots.map(s => ({ x: s.x, y: s.y })),
       quizData: currentQuizData,
       coopSolved: Array.from(coopSolvedSpots)
     });
   };
+
+  // 교사 게임 시작 / 대기 전환 제어 버튼
+  if (gameControlBtn) {
+    gameControlBtn.addEventListener('click', () => {
+      if (gameStatus === 'waiting') {
+        gameStatus = 'playing';
+        gameStartTime = Date.now();
+        updateGameStatusUi();
+        sound.playVictory();
+        network.broadcast({ type: 'game_start' });
+        alert('🔥 [게임 시작] 십계명 대탐험이 시작되었습니다! 모든 학생의 비석 퀴즈가 활성화되었습니다.');
+      } else {
+        if (confirm('게임을 대기 모드로 전환하시겠습니까?\n(학생들의 퀴즈 상호작용이 잠깁니다)')) {
+          gameStatus = 'waiting';
+          updateGameStatusUi();
+          sound.playSelect();
+          network.broadcast({ type: 'game_pause' });
+        }
+      }
+    });
+  }
 
   // 교사 퀴즈 편집 버튼 클릭
   if (quizEditorBtn) {
@@ -253,6 +310,7 @@ if (isTeacher) {
   network.joinRoom(roomParam);
   camera.setMode('follow');
 
+  if (gameControlBtn) gameControlBtn.classList.add('hidden');
   if (quizEditorBtn) quizEditorBtn.classList.add('hidden');
   if (gameModeBtn) {
     gameModeBtn.style.cursor = 'default';
@@ -261,12 +319,17 @@ if (isTeacher) {
 }
 
 updateGameModeUi();
+updateGameStatusUi();
 
 // --- P2P 네트워크 이벤트 핸들러 등록 ---
 
-// 1. 방 초기화 데이터 수신 (학생 클라이언트가 방에 들어왔을 때)
+// 1. 방 초기화 데이터 수신 (학생 클라이언트가 방에 들어왔을 때 - 중간 입장도 즉시 상태 수신)
 network.on('init_room_state', (data) => {
   console.log('[네트워크] 호스트 방 상태 수신:', data);
+  if (data.gameStatus) {
+    gameStatus = data.gameStatus;
+    updateGameStatusUi();
+  }
   if (data.mode) {
     currentGameMode = data.mode;
     leaderboard.setMode(currentGameMode);
@@ -282,6 +345,23 @@ network.on('init_room_state', (data) => {
     data.coopSolved.forEach(id => coopSolvedSpots.add(id));
     updateTabletHud();
   }
+});
+
+// 게임 시작 신호 수신 (학생)
+network.on('game_start', () => {
+  gameStatus = 'playing';
+  gameStartTime = Date.now();
+  updateGameStatusUi();
+  sound.playVictory();
+  alert('🔥 선생님이 게임을 시작하셨습니다! 광야 비석을 찾아 퀴즈를 풀어보세요!');
+});
+
+// 게임 대기 신호 수신 (학생)
+network.on('game_pause', () => {
+  gameStatus = 'waiting';
+  updateGameStatusUi();
+  sound.playSelect();
+  alert('⏳ 선생님이 게임을 대기 상태로 전환하셨습니다.');
 });
 
 // 2. 게임 모드 전환 수신
@@ -614,6 +694,25 @@ function update() {
 function updateProximityHint() {
   if (!proximityHint) return;
 
+  // 0. 대기 상태일 때는 상호작용 잠금 및 대기 안내 표시
+  if (gameStatus === 'waiting') {
+    const distMoses = Math.hypot(player.x - world.moses.x, player.y - world.moses.y);
+    let nearSpot = false;
+    for (const spot of world.commandmentSpots) {
+      if (Math.hypot(player.x - spot.x, player.y - spot.y) < 85) {
+        nearSpot = true;
+        break;
+      }
+    }
+    if (distMoses < 95 || nearSpot) {
+      proximityHint.innerHTML = `<span class="hint-key">⏳ 대기 중</span> 선생님의 시작 신호를 기다리고 있습니다! 광야를 자유롭게 탐험해보세요.`;
+      proximityHint.classList.remove('hidden');
+      return;
+    }
+    proximityHint.classList.add('hidden');
+    return;
+  }
+
   // 1. 모세와의 거리
   const distMoses = Math.hypot(player.x - world.moses.x, player.y - world.moses.y);
   if (distMoses < 95) {
@@ -638,6 +737,13 @@ function updateProximityHint() {
 }
 
 function checkInteraction() {
+  // 대기 상태에서는 퀴즈 및 봉헌 팝업 잠금
+  if (gameStatus === 'waiting') {
+    sound.playWrong();
+    alert('⏳ 아직 게임이 시작되지 않았습니다!\n선생님께서 [게임 시작!] 버튼을 누르시면 퀴즈가 열립니다. 광야를 자유롭게 탐험하며 잠시만 기다려주세요!');
+    return;
+  }
+
   // 모세와의 거리 확인 (십계명 돌판 봉헌 모달 오픈)
   const distMoses = Math.hypot(player.x - world.moses.x, player.y - world.moses.y);
   if (distMoses < 95) {
