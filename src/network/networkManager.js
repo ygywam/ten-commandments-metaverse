@@ -90,6 +90,9 @@ export class NetworkManager {
     conn.on('open', () => {
       this.connections.set(conn.peer, conn);
       console.log(`[네트워크] 새 학생 참가 (총 ${this.connections.size}명 접속):`, conn.peer);
+      if (this.onStudentJoin) {
+        this.onStudentJoin(conn);
+      }
     });
 
     conn.on('data', (data) => {
@@ -101,11 +104,15 @@ export class NetworkManager {
           nickname: data.nickname,
           isMoving: data.isMoving,
           walkCycle: data.walkCycle,
+          facing: data.facing || 'down',
           custom: data.custom
         });
         if (this.onRemotePlayersUpdate) {
           this.onRemotePlayersUpdate(this.remotePlayers);
         }
+      } else {
+        // 커스텀 패킷 처리 (퀴즈 동기화, 계명 완료, 랭킹 등)
+        this.dispatchPacket(data, conn.peer);
       }
     });
 
@@ -131,7 +138,45 @@ export class NetworkManager {
       if (this.onRemotePlayersUpdate) {
         this.onRemotePlayersUpdate(this.remotePlayers);
       }
+    } else {
+      // 커스텀 패킷 처리
+      this.dispatchPacket(data, 'host');
     }
+  }
+
+  // 커스텀 패킷 이벤트 리스너 등록
+  on(packetType, callback) {
+    if (!this.packetListeners) {
+      this.packetListeners = new Map();
+    }
+    if (!this.packetListeners.has(packetType)) {
+      this.packetListeners.set(packetType, []);
+    }
+    this.packetListeners.get(packetType).push(callback);
+  }
+
+  dispatchPacket(data, senderId) {
+    if (!this.packetListeners || !data?.type) return;
+    const callbacks = this.packetListeners.get(data.type);
+    if (callbacks) {
+      callbacks.forEach(cb => cb(data, senderId));
+    }
+  }
+
+  // 호스트 -> 모든 참가자 브로드캐스트
+  broadcast(packet) {
+    if (!this.isHost) return;
+    for (const conn of this.connections.values()) {
+      if (conn.open) {
+        conn.send(packet);
+      }
+    }
+  }
+
+  // 학생 -> 호스트 단독 전송
+  sendToHost(packet) {
+    if (this.isHost || !this.hostConnection || !this.hostConnection.open) return;
+    this.hostConnection.send(packet);
   }
 
   // 내 아바타 실시간 상태 갱신
@@ -142,6 +187,7 @@ export class NetworkManager {
       nickname: playerState.nickname,
       isMoving: playerState.isMoving,
       walkCycle: playerState.walkCycle,
+      facing: playerState.facing || 'down',
       custom: playerState.custom
     };
   }

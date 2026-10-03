@@ -4,8 +4,11 @@ import { World } from './engine/world.js';
 import { InputController } from './controls/inputController.js';
 import { AvatarCustomizer } from './components/avatarCustomizer.js';
 import { NetworkManager } from './network/networkManager.js';
-import { COMMANDMENTS_DATA } from './data/commandmentsData.js';
+import { getCommandments, saveCommandments } from './data/commandmentsData.js';
 import { QuizModal } from './components/quizModal.js';
+import { TabletModal } from './components/tabletModal.js';
+import { QuizEditorModal } from './components/quizEditorModal.js';
+import { LeaderboardWidget } from './components/leaderboardWidget.js';
 
 // DOM 요소 참조
 const soundToggleBtn = document.getElementById('btn-sound-toggle');
@@ -25,16 +28,125 @@ const joinUrlInput = document.getElementById('input-join-url');
 const copyUrlBtn = document.getElementById('btn-copy-url');
 const qrcodeBox = document.getElementById('qrcode-box');
 const proximityHint = document.getElementById('proximity-hint');
+const tabletHudBtn = document.getElementById('btn-tablet-hud');
+const tabletHudText = document.getElementById('tablet-hud-text');
+const quizEditorBtn = document.getElementById('btn-quiz-editor');
+const gameModeBtn = document.getElementById('btn-game-mode');
+const modeIcon = document.getElementById('mode-icon');
+const modeText = document.getElementById('mode-text');
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 
-// 플레이어 보유 계명 세트 (1~10번 조각)
+// 게임 모드 ('coop': 우리 반 협동전, 'individual': 개인전 랭킹 레이스)
+let currentGameMode = 'coop';
+
+// 최신 퀴즈 데이터셋 (교사가 편집한 내용 우선)
+let currentQuizData = getCommandments();
+
+// 플레이어 개인 보유 계명 세트 (1~10번 조각)
 const collectedCommandments = new Set();
+
+// 협동 모드용 전체 공유 돌판 세트 (1~10번 조각)
+const coopSolvedSpots = new Set();
+
+// 개인전 완주 여부
+let isLocalFinished = false;
+let gameStartTime = Date.now();
+
+// 리더보드 & 진행도 위젯 초기화
+const leaderboard = new LeaderboardWidget();
+
+// 퀴즈 편집기 인스턴스 초기화 (교사 전용)
+const quizEditorModal = new QuizEditorModal((updatedQuizData) => {
+  currentQuizData = updatedQuizData;
+  console.log('[퀴즈 편집] 퀴즈 데이터 갱신 완료, 학생들에게 브로드캐스트 전송');
+  network.broadcast({
+    type: 'quiz_sync',
+    quizData: currentQuizData
+  });
+});
+
+function updateTabletHud() {
+  if (tabletHudText) {
+    if (currentGameMode === 'coop') {
+      tabletHudText.textContent = `협동 돌판: ${coopSolvedSpots.size} / 10`;
+    } else {
+      tabletHudText.textContent = `내 돌판: ${collectedCommandments.size} / 10`;
+    }
+  }
+  leaderboard.setCoopSolved(coopSolvedSpots);
+}
+
+// 모세 십계명 돌판 모달 및 세레머니 인스턴스 초기화
+const tabletModal = new TabletModal(() => {
+  console.log('[세레머니] 10개 계명 전체 봉헌 완료!');
+  if (currentGameMode === 'individual' && !isLocalFinished) {
+    isLocalFinished = true;
+    const finishElapsed = Math.round((Date.now() - gameStartTime) / 1000);
+    network.broadcast({
+      type: 'rank_finish',
+      id: network.peer?.id || 'local',
+      nickname: player.nickname,
+      finishTime: finishElapsed
+    });
+    network.sendToHost({
+      type: 'rank_finish',
+      nickname: player.nickname,
+      finishTime: finishElapsed
+    });
+    leaderboard.updatePlayerProgress(network.peer?.id || 'local', {
+      nickname: player.nickname,
+      count: 10,
+      isFinished: true,
+      finishTime: finishElapsed
+    });
+  }
+});
+
+// 상단 돌판 배지 클릭 시 돌판 모달 오픈
+if (tabletHudBtn) {
+  tabletHudBtn.addEventListener('click', () => {
+    const activeSet = (currentGameMode === 'coop') ? coopSolvedSpots : collectedCommandments;
+    tabletModal.open(activeSet, player.nickname);
+  });
+}
 
 // 퀴즈 모달 인스턴스 초기화
 const quizModal = new QuizModal((commandmentId) => {
   collectedCommandments.add(commandmentId);
-  console.log(`[계명 획득] 제${commandmentId}계명 획득 완료! (보유 중: ${collectedCommandments.size}/10)`);
+  coopSolvedSpots.add(commandmentId);
+  updateTabletHud();
+  sound.playItemGet();
+
+  // 리더보드 내 진척도 갱신
+  leaderboard.updatePlayerProgress(network.peer?.id || 'local', {
+    nickname: player.nickname,
+    count: collectedCommandments.size
+  });
+
+  // 네트워크로 계명 해결 패킷 전송
+  const packet = {
+    type: 'solve_commandment',
+    commandmentId,
+    nickname: player.nickname,
+    personalCount: collectedCommandments.size,
+    coopSolved: Array.from(coopSolvedSpots)
+  };
+  network.broadcast(packet);
+  network.sendToHost(packet);
+
+  // 모드별 10개 완료 시 안내
+  if (currentGameMode === 'coop' && coopSolvedSpots.size === 10) {
+    setTimeout(() => {
+      alert('🎉 할렐루야! 우리 반이 10개의 계명을 모두 찾았습니다! 모세 선지자님 제단으로 모이세요!');
+      tabletModal.open(coopSolvedSpots, player.nickname);
+    }, 600);
+  } else if (currentGameMode === 'individual' && collectedCommandments.size === 10) {
+    setTimeout(() => {
+      alert(`🏆 축하합니다 ${player.nickname}님! 10개 계명을 모두 모았습니다! 어서 모세 선지자님께 봉헌하여 완주 순위를 확정하세요!`);
+      tabletModal.open(collectedCommandments, player.nickname);
+    }, 600);
+  }
 });
 
 // 게임 시스템 인스턴스
@@ -78,23 +190,173 @@ const network = new NetworkManager(
 // URL 파라미터 확인 (교사용 전체 뷰 기본 모드 및 룸 코드)
 const urlParams = new URLSearchParams(window.location.search);
 const roomParam = urlParams.get('room');
+const isTeacher = urlParams.get('view') === 'teacher' || (!roomParam && !sessionStorage.getItem('joined_room'));
 
-if (urlParams.get('view') === 'teacher' || (!roomParam && !sessionStorage.getItem('joined_room'))) {
+function updateGameModeUi() {
+  if (modeIcon && modeText) {
+    if (currentGameMode === 'coop') {
+      modeIcon.textContent = '🤝';
+      modeText.textContent = '협동 모드';
+    } else {
+      modeIcon.textContent = '🏆';
+      modeText.textContent = '개인전 모드';
+    }
+  }
+  updateTabletHud();
+}
+
+if (isTeacher) {
   // 교사(호스트) 기본 모드 또는 첫 개설자: 방 자동 생성
   camera.setMode('overview');
   if (viewIcon && viewText) {
     viewIcon.textContent = '👤';
     viewText.textContent = '캐릭터 뷰';
   }
-  // 교사 방 개설
   network.createRoom();
+
+  // 학생 참가 시 방의 최신 상태(모드, 랜덤 비석 좌표, 퀴즈, 협동 상태) 전송
+  network.onStudentJoin = (conn) => {
+    conn.send({
+      type: 'init_room_state',
+      mode: currentGameMode,
+      spots: world.commandmentSpots.map(s => ({ x: s.x, y: s.y })),
+      quizData: currentQuizData,
+      coopSolved: Array.from(coopSolvedSpots)
+    });
+  };
+
+  // 교사 퀴즈 편집 버튼 클릭
+  if (quizEditorBtn) {
+    quizEditorBtn.addEventListener('click', () => {
+      quizEditorModal.open();
+    });
+  }
+
+  // 교사 게임 모드 전환 버튼 클릭
+  if (gameModeBtn) {
+    gameModeBtn.addEventListener('click', () => {
+      currentGameMode = (currentGameMode === 'coop') ? 'individual' : 'coop';
+      leaderboard.setMode(currentGameMode);
+      updateGameModeUi();
+      sound.playSelect();
+
+      // 학생들에게 모드 변경 브로드캐스트
+      network.broadcast({
+        type: 'mode_sync',
+        mode: currentGameMode
+      });
+    });
+  }
 } else if (roomParam) {
   // 학생 클라이언트 모드: 주어진 방 코드로 접속
   sessionStorage.setItem('joined_room', roomParam);
   network.joinRoom(roomParam);
-  // 학생은 아바타 팔로우 뷰 기본
   camera.setMode('follow');
+
+  if (quizEditorBtn) quizEditorBtn.classList.add('hidden');
+  if (gameModeBtn) {
+    gameModeBtn.style.cursor = 'default';
+    gameModeBtn.title = '게임 모드 (선생님만 변경 가능)';
+  }
 }
+
+updateGameModeUi();
+
+// --- P2P 네트워크 이벤트 핸들러 등록 ---
+
+// 1. 방 초기화 데이터 수신 (학생 클라이언트가 방에 들어왔을 때)
+network.on('init_room_state', (data) => {
+  console.log('[네트워크] 호스트 방 상태 수신:', data);
+  if (data.mode) {
+    currentGameMode = data.mode;
+    leaderboard.setMode(currentGameMode);
+    updateGameModeUi();
+  }
+  if (data.spots) {
+    world.randomizeSpots(data.spots);
+  }
+  if (data.quizData) {
+    currentQuizData = data.quizData;
+  }
+  if (data.coopSolved) {
+    data.coopSolved.forEach(id => coopSolvedSpots.add(id));
+    updateTabletHud();
+  }
+});
+
+// 2. 게임 모드 전환 수신
+network.on('mode_sync', (data) => {
+  currentGameMode = data.mode;
+  leaderboard.setMode(currentGameMode);
+  updateGameModeUi();
+  sound.playItemGet();
+  alert(`📢 게임 모드가 [${currentGameMode === 'coop' ? '우리 반 협동 모드' : '개인전 랭킹 레이스'}]로 변경되었습니다!`);
+});
+
+// 3. 퀴즈 데이터 갱신 수신 (교사가 퀴즈 수정 시)
+network.on('quiz_sync', (data) => {
+  if (data.quizData) {
+    currentQuizData = data.quizData;
+    console.log('[네트워크] 선생님의 최신 퀴즈 동기화 완료!');
+  }
+});
+
+// 4. 누군가 계명 해결 패킷 수신
+network.on('solve_commandment', (data, senderId) => {
+  if (data.commandmentId) {
+    coopSolvedSpots.add(data.commandmentId);
+    updateTabletHud();
+  }
+  if (data.nickname) {
+    leaderboard.updatePlayerProgress(senderId || data.nickname, {
+      nickname: data.nickname,
+      count: data.personalCount || 1
+    });
+  }
+  if (network.isHost) {
+    network.broadcast({
+      type: 'coop_update',
+      commandmentId: data.commandmentId,
+      solverNickname: data.nickname,
+      coopSolved: Array.from(coopSolvedSpots),
+      senderId,
+      personalCount: data.personalCount
+    });
+  }
+});
+
+// 5. 호스트가 브로드캐스트한 협동 상태 수신
+network.on('coop_update', (data) => {
+  if (data.coopSolved) {
+    data.coopSolved.forEach(id => coopSolvedSpots.add(id));
+    updateTabletHud();
+  }
+  if (data.senderId && data.solverNickname) {
+    leaderboard.updatePlayerProgress(data.senderId, {
+      nickname: data.solverNickname,
+      count: data.personalCount || 1
+    });
+  }
+});
+
+// 6. 개인전 완주 수신
+network.on('rank_finish', (data, senderId) => {
+  sound.playVictory();
+  leaderboard.updatePlayerProgress(data.id || senderId, {
+    nickname: data.nickname,
+    count: 10,
+    isFinished: true,
+    finishTime: data.finishTime
+  });
+  if (network.isHost) {
+    network.broadcast({
+      type: 'rank_finish',
+      id: senderId,
+      nickname: data.nickname,
+      finishTime: data.finishTime
+    });
+  }
+});
 
 // 플로팅 QR코드 위젯 제어 (토글/최소화/감추기)
 if (roomModalBtn && floatingQrWidget) {
@@ -317,10 +579,20 @@ function update() {
 
     player.isMoving = true;
     player.walkCycle += 0.25;
+
+    // 좌우 이동 방향에 따른 바라보는 방향(facing) 갱신
+    if (dx > 0.05) {
+      player.facing = 'right';
+    } else if (dx < -0.05) {
+      player.facing = 'left';
+    }
   } else {
     player.isMoving = false;
     player.walkCycle = 0;
   }
+
+  // 플레이어 이동에 따른 근접 비석 탐험 발견 처리
+  world.updateDiscovery(player.x, player.y);
 
   // 카메라가 플레이어를 스무스하게 추적
   camera.update(player.x, player.y);
@@ -345,7 +617,8 @@ function updateProximityHint() {
   // 1. 모세와의 거리
   const distMoses = Math.hypot(player.x - world.moses.x, player.y - world.moses.y);
   if (distMoses < 95) {
-    proximityHint.innerHTML = `<span class="hint-key">Space</span> 모세 선지자님과 대화하기 📜`;
+    const isCompleted = (currentGameMode === 'coop') ? (coopSolvedSpots.size >= 10) : (collectedCommandments.size >= 10);
+    proximityHint.innerHTML = `<span class="hint-key">Space</span> 모세 선지자 십계명 돌판 제단 ${isCompleted ? '🌟 봉헌 가능!' : '📜'}`;
     proximityHint.classList.remove('hidden');
     return;
   }
@@ -354,7 +627,7 @@ function updateProximityHint() {
   for (const spot of world.commandmentSpots) {
     const dist = Math.hypot(player.x - spot.x, player.y - spot.y);
     if (dist < 85) {
-      const isSolved = collectedCommandments.has(spot.id);
+      const isSolved = (currentGameMode === 'coop') ? coopSolvedSpots.has(spot.id) : collectedCommandments.has(spot.id);
       proximityHint.innerHTML = `<span class="hint-key">Space</span> ${spot.name} 퀴즈 풀기 ${isSolved ? '✔' : '✨'}`;
       proximityHint.classList.remove('hidden');
       return;
@@ -365,11 +638,12 @@ function updateProximityHint() {
 }
 
 function checkInteraction() {
-  // 모세와의 거리 확인
+  // 모세와의 거리 확인 (십계명 돌판 봉헌 모달 오픈)
   const distMoses = Math.hypot(player.x - world.moses.x, player.y - world.moses.y);
   if (distMoses < 95) {
     sound.playStonePlace();
-    alert(`모세 선지자: "샬롬! 현재 ${collectedCommandments.size}/10개의 계명 조각을 모았구나! 광야 곳곳을 탐험하며 10개의 계명을 모두 완성해 오너라!"`);
+    const activeSet = (currentGameMode === 'coop') ? coopSolvedSpots : collectedCommandments;
+    tabletModal.open(activeSet, player.nickname);
     return;
   }
 
@@ -377,9 +651,10 @@ function checkInteraction() {
   for (const spot of world.commandmentSpots) {
     const dist = Math.hypot(player.x - spot.x, player.y - spot.y);
     if (dist < 85) {
-      const quizData = COMMANDMENTS_DATA.find(q => q.id === spot.id);
+      // 교사가 수정한 최신 퀴즈 데이터셋 참조
+      const quizData = currentQuizData.find(q => q.id === spot.id);
       if (quizData) {
-        const isSolved = collectedCommandments.has(spot.id);
+        const isSolved = (currentGameMode === 'coop') ? coopSolvedSpots.has(spot.id) : collectedCommandments.has(spot.id);
         quizModal.open(quizData, isSolved);
       }
       break;
@@ -392,8 +667,10 @@ function render() {
 
   camera.applyTransform(ctx);
 
-  // 1. 제공된 시내산 광야 맵 및 랜드마크 렌더링 (획득한 계명 비석에는 금빛 후광 및 체크 표시)
-  world.renderBackground(ctx, collectedCommandments);
+  // 1. 제공된 시내산 광야 맵 및 랜드마크 렌더링 (모드별 돌판 완료 및 교사 관제 시야 반영)
+  const activeSolved = (currentGameMode === 'coop') ? coopSolvedSpots : collectedCommandments;
+  const isOverview = camera.mode === 'overview';
+  world.renderBackground(ctx, activeSolved, isOverview);
 
   // 2. 다른 접속 학생들의 아바타 렌더링
   for (const remotePlayer of remotePlayers.values()) {

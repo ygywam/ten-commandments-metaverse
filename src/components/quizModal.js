@@ -63,11 +63,30 @@ export class QuizModal {
 
     this.optionsContainer.innerHTML = '';
 
+    const isOx = quizData.type === 'ox';
+    if (isOx) {
+      this.optionsContainer.className = 'quiz-options-list ox-container';
+    } else {
+      this.optionsContainer.className = 'quiz-options-list multiple-container';
+    }
+
     quizData.options.forEach((optText, idx) => {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'quiz-opt-btn';
-      btn.innerHTML = `<span class="opt-num">${idx + 1}</span> <span class="opt-txt">${optText}</span>`;
+
+      if (isOx) {
+        // OX 퀴즈용 시원하고 커다란 버튼 (0: O, 1: X)
+        const isO = idx === 0;
+        btn.className = `quiz-opt-btn ox-opt-btn ${isO ? 'ox-o' : 'ox-x'}`;
+        btn.innerHTML = `
+          <span class="ox-symbol">${isO ? '⭕' : '❌'}</span>
+          <span class="ox-label">${optText}</span>
+        `;
+      } else {
+        // 객관식 2~4지선다형 버튼
+        btn.className = 'quiz-opt-btn';
+        btn.innerHTML = `<span class="opt-num">${idx + 1}</span> <span class="opt-txt">${optText}</span>`;
+      }
 
       if (isAlreadySolved) {
         if (idx === quizData.answer) {

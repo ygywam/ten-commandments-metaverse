@@ -29,19 +29,34 @@ export class World {
       title: '십계명 완성 제단'
     };
 
-    // 10개 계명 미션 장소 좌표
-    this.commandmentSpots = [
-      { id: 1, name: '제1계명 (오직 하나님)', x: 620, y: 780, icon: '📜' },
-      { id: 2, name: '제2계명 (우상 숭배 금지)', x: 1200, y: 1100, icon: '📜' },
-      { id: 3, name: '제3계명 (주의 이름 망령되이)', x: 1750, y: 1350, icon: '📜' },
-      { id: 4, name: '제4계명 (안식일 거룩히)', x: 2500, y: 1300, icon: '📜' },
-      { id: 5, name: '제5계명 (부모님 공경)', x: 3100, y: 1050, icon: '📜' },
-      { id: 6, name: '제6계명 (살인하지 말라)', x: 3550, y: 920, icon: '📜' },
-      { id: 7, name: '제7계명 (간음하지 말라)', x: 3350, y: 1650, icon: '📜' },
-      { id: 8, name: '제8계명 (도둑질하지 말라)', x: 2600, y: 1850, icon: '📜' },
-      { id: 9, name: '제9계명 (거짓말 금지)', x: 1550, y: 1800, icon: '📜' },
-      { id: 10, name: '제10계명 (탐내지 말라)', x: 800, y: 1720, icon: '📜' }
+    // 광야 내 안전하고 넓은 30개 후보 스폰 좌표 풀 (오아시스, 장막, 바위골짜기 등)
+    this.candidatePool = [
+      { x: 550, y: 820 },   { x: 920, y: 780 },   { x: 1350, y: 850 },  { x: 1680, y: 820 },
+      { x: 620, y: 1100 },  { x: 1050, y: 1150 }, { x: 1450, y: 1120 }, { x: 1820, y: 1150 },
+      { x: 2450, y: 1080 }, { x: 2850, y: 920 },  { x: 3250, y: 880 },  { x: 3620, y: 820 },
+      { x: 2380, y: 1320 }, { x: 2750, y: 1250 }, { x: 3150, y: 1280 }, { x: 3580, y: 1350 },
+      { x: 520, y: 1720 },  { x: 920, y: 1650 },  { x: 1280, y: 1580 }, { x: 1720, y: 1520 },
+      { x: 750, y: 1950 },  { x: 1150, y: 1980 }, { x: 1580, y: 1920 }, { x: 1920, y: 1850 },
+      { x: 2280, y: 1820 }, { x: 2650, y: 1780 }, { x: 3050, y: 1850 }, { x: 3450, y: 1750 },
+      { x: 2850, y: 2050 }, { x: 3300, y: 2020 }
     ];
+
+    // 기본 10개 계명 미션 장소 정의
+    this.commandmentSpots = [
+      { id: 1, name: '제1계명 (오직 하나님)', x: 620, y: 780, icon: '📜', discovered: false },
+      { id: 2, name: '제2계명 (우상 숭배 금지)', x: 1200, y: 1100, icon: '📜', discovered: false },
+      { id: 3, name: '제3계명 (주의 이름 망령되이)', x: 1750, y: 1350, icon: '📜', discovered: false },
+      { id: 4, name: '제4계명 (안식일 거룩히)', x: 2500, y: 1300, icon: '📜', discovered: false },
+      { id: 5, name: '제5계명 (부모님 공경)', x: 3100, y: 1050, icon: '📜', discovered: false },
+      { id: 6, name: '제6계명 (살인하지 말라)', x: 3550, y: 920, icon: '📜', discovered: false },
+      { id: 7, name: '제7계명 (간음하지 말라)', x: 3350, y: 1650, icon: '📜', discovered: false },
+      { id: 8, name: '제8계명 (도둑질하지 말라)', x: 2600, y: 1850, icon: '📜', discovered: false },
+      { id: 9, name: '제9계명 (거짓말 금지)', x: 1550, y: 1800, icon: '📜', discovered: false },
+      { id: 10, name: '제10계명 (탐내지 말라)', x: 800, y: 1720, icon: '📜', discovered: false }
+    ];
+
+    // 시작 시 무작위 좌표 셔플 배치
+    this.randomizeSpots();
 
     // 이동 불가 장애물 구역
     this.obstacles = [
@@ -53,6 +68,46 @@ export class World {
       { type: 'circle', x: 3670, y: 1060, r: 90 },
       { type: 'circle', x: 810, y: 1420, r: 85 }
     ];
+  }
+
+  // 10개 비석 위치 무작위 셔플 (givenCoords가 있으면 동기화 좌표 사용)
+  randomizeSpots(givenCoords = null) {
+    if (givenCoords && Array.isArray(givenCoords) && givenCoords.length === 10) {
+      this.commandmentSpots.forEach((spot, idx) => {
+        spot.x = givenCoords[idx].x;
+        spot.y = givenCoords[idx].y;
+        spot.discovered = false;
+      });
+      return givenCoords;
+    }
+
+    // 30개 후보 풀에서 10개 무작위 비복원 추출 (Fisher-Yates 셔플)
+    const pool = [...this.candidatePool];
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+
+    const chosen = pool.slice(0, 10);
+    this.commandmentSpots.forEach((spot, idx) => {
+      spot.x = chosen[idx].x;
+      spot.y = chosen[idx].y;
+      spot.discovered = false;
+    });
+
+    return chosen.map(c => ({ x: c.x, y: c.y }));
+  }
+
+  // 플레이어 이동 시 근접 비석 탐험 발견 처리
+  updateDiscovery(px, py) {
+    this.commandmentSpots.forEach((spot) => {
+      if (!spot.discovered) {
+        const dist = Math.hypot(px - spot.x, py - spot.y);
+        if (dist < 200) {
+          spot.discovered = true;
+        }
+      }
+    });
   }
 
   isWalkable(x, y) {
@@ -73,24 +128,40 @@ export class World {
     return true;
   }
 
-  renderBackground(ctx, solvedSpots = new Set()) {
+  renderBackground(ctx, solvedSpots = new Set(), isTeacherView = false) {
     if (this.isMapLoaded) {
       ctx.drawImage(this.mapImage, 0, 0, this.width, this.height);
     } else {
       ctx.fillStyle = '#eddcb9';
       ctx.fillRect(0, 0, this.width, this.height);
     }
-    this.renderLandmarks(ctx, solvedSpots);
+    this.renderLandmarks(ctx, solvedSpots, isTeacherView);
   }
 
-  renderLandmarks(ctx, solvedSpots = new Set()) {
+  renderLandmarks(ctx, solvedSpots = new Set(), isTeacherView = false) {
     const time = Date.now() * 0.003;
 
     // 10개 계명 스팟
     this.commandmentSpots.forEach((spot) => {
       const isSolved = solvedSpots.has(spot.id);
+      const isVisible = isTeacherView || isSolved || spot.discovered;
       const floatY = Math.sin(time + spot.id) * 6;
 
+      if (!isVisible) {
+        // [미발견 상태: 원거리 숨김] 모래바람 속 은은한 신비의 반짝임 이펙트만 표시
+        const pulse = (Math.sin(time * 2 + spot.id) + 1) * 0.5; // 0 ~ 1
+        ctx.fillStyle = `rgba(245, 158, 11, ${0.15 + pulse * 0.25})`;
+        ctx.beginPath();
+        ctx.arc(spot.x, spot.y - 10, 16 + pulse * 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.font = `${14 + pulse * 4}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('✨', spot.x, spot.y - 8);
+        return;
+      }
+
+      // [발견 완료 또는 교사 화면]: 찬란한 비석 렌더링
       // 그림자
       ctx.fillStyle = isSolved ? 'rgba(34, 197, 94, 0.35)' : 'rgba(230, 156, 36, 0.28)';
       ctx.beginPath();
@@ -140,11 +211,21 @@ export class World {
     // 모세 NPC
     const m = this.moses;
     const mosesFloat = Math.sin(time) * 3;
+    const isCompleted = solvedSpots.size >= 10;
 
-    ctx.fillStyle = 'rgba(245, 158, 11, 0.4)';
+    // 모세 발밑 금빛 원형 후광
+    ctx.fillStyle = isCompleted ? 'rgba(234, 179, 8, 0.6)' : 'rgba(245, 158, 11, 0.4)';
     ctx.beginPath();
-    ctx.ellipse(m.x, m.y + 10, 48, 22, 0, 0, Math.PI * 2);
+    ctx.ellipse(m.x, m.y + 10, 52, 24, 0, 0, Math.PI * 2);
     ctx.fill();
+
+    if (isCompleted) {
+      ctx.strokeStyle = '#eab308';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(m.x, m.y - 20 + mosesFloat, 38, time, time + Math.PI * 2);
+      ctx.stroke();
+    }
 
     ctx.fillStyle = '#b45309';
     ctx.beginPath();
@@ -156,10 +237,21 @@ export class World {
     ctx.arc(m.x, m.y - 14 + mosesFloat, 12, 0, Math.PI);
     ctx.fill();
 
+    // 두 개의 돌판을 품에 안고 있는 모세 (회색 석판 2개)
     ctx.fillStyle = '#78716c';
-    ctx.fillRect(m.x - 18, m.y - 28 + mosesFloat, 12, 18);
-    ctx.fillRect(m.x + 6, m.y - 28 + mosesFloat, 12, 18);
+    ctx.strokeStyle = isCompleted ? '#fbbf24' : '#475569';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(m.x - 18, m.y - 28 + mosesFloat, 12, 20, 3);
+    ctx.fill();
+    ctx.stroke();
 
+    ctx.beginPath();
+    ctx.roundRect(m.x + 6, m.y - 28 + mosesFloat, 12, 20, 3);
+    ctx.fill();
+    ctx.stroke();
+
+    // 모세 명찰 및 돌판 진행 상태
     ctx.font = 'bold 15px sans-serif';
     ctx.fillStyle = '#ffffff';
     ctx.strokeStyle = 'rgba(0,0,0,0.85)';
@@ -167,6 +259,13 @@ export class World {
     ctx.textAlign = 'center';
     ctx.strokeText(`👑 ${m.name}`, m.x, m.y - 54 + mosesFloat);
     ctx.fillText(`👑 ${m.name}`, m.x, m.y - 54 + mosesFloat);
+
+    // 진척도 서브태그
+    ctx.font = 'bold 12px sans-serif';
+    const statusText = isCompleted ? '🌟 십계명 완성! 봉헌하기' : `📜 십계명 돌판 [${solvedSpots.size}/10]`;
+    ctx.fillStyle = isCompleted ? '#fef08a' : '#fed7aa';
+    ctx.strokeText(statusText, m.x, m.y - 72 + mosesFloat);
+    ctx.fillText(statusText, m.x, m.y - 72 + mosesFloat);
   }
 
   // 8인 고유 캐릭터 실시간 렌더러
@@ -197,6 +296,11 @@ export class World {
       ctx.save();
       ctx.translate(0, -bob);
       ctx.rotate(tilt);
+
+      // 왼쪽 이동 시 좌우 대칭 반전 (scaleX = -1)
+      if (player.facing === 'left') {
+        ctx.scale(-1, 1);
+      }
 
       // 선택된 고유 캐릭터 투명 스프라이트 렌더링 (화살표 100% 제거)
       ctx.drawImage(
